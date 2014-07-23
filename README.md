@@ -30,15 +30,15 @@ call
 ```  
  
 ### create the "test" library with the file test.c:
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 lib-y+=test  
 include scripts.mk
 ```  
 
 ### create the static "test" library with the file test.c:
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 slib-y+=test  
 include scripts.mk
 ```  
@@ -48,15 +48,15 @@ Create complexe binaries
   
 ### create the "main" application with the file main.c and test.c:
 
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 bin-y+=main  
 main_SOURCES:=main.c test.c  
 include scripts.mk  
 ```  
   
 call  
-:   ```
+>   ```
  $: make  
   CC main  
   CC test  
@@ -70,37 +70,37 @@ call
 ```  
   
 ### create the "main" application and link with libm:
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
  bin-y+=main  
  main_LIBRARY:=m  
  include scripts.mk
 ```  
 
 ### create the main application with source files into src directory:
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 subdir-y+=src  
 include scripts.mk
 ```  
   
 *src/Makefile*:  
-: ```
+> ```
 bin-y+=main  
 main_SOURCES:=main.c test.c
 ```  
   
 another way to do the same thing:  
   
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 include scripts.mk  
 all:  
 	make $(build)=src/main.mk  
 ```  
   
-*src/main.mk*:
-: ```
+*src/main.mk*:  
+> ```
 bin-y+=main  
 main_SOURCES:=main.c test.c  
 ```  
@@ -110,15 +110,15 @@ Configure your project
 You can add a configuration file to your project to define some variables availables inside the Makefile and inside your source code.  
 Example you don't want to build some part of code and for that you decide to define `CONFIG_NO_BUILD` to `n`.  
 To do that you can create a `config` file with:  
-*config*:
-: ```
+*config*:  
+> ```
 CONFIG_NO_BUILD=n
 ```  
 
 After you have to define the name of your configuration file into your main Makefile like :
 
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 CONFIG=config
 bin-y+=main
 lib-$(CONFIG_NO_BUILD)+=test  
@@ -127,8 +127,8 @@ include scripts.mk
 
 or to exclude some source file to the build  
 
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 CONFIG=config
 bin-y+=main
 main_SOURCES:=main.c
@@ -141,8 +141,8 @@ include scripts.mk
 During the build step, `makemore` generates a `$(CONFIG).h` file which will contains the definition of your configuration.  
 In this example `makemore` generates `config.h` which contains
 
-*config.h*:
-: ```
+*config.h*:  
+> ```
 \#define CONFIG_NO_BUILD n
 ```  
 
@@ -153,8 +153,8 @@ Your main Makefile has to retrieve the `scripts.mk` file :
 : * A solution is to copy this file into the build directory.  
  * Another solution is to modify your Makefile like this:
 
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 srcdir=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))  
   
 bin-y+=main  
@@ -162,7 +162,7 @@ include $(srcdir)/scripts.mk
 ```  
   
 call  
-: ```
+> ```
 $ mkdir obj  
 $ cd obj  
 $ make -f ../Makefile
@@ -180,8 +180,8 @@ The normal installation is localized to `prefix=/usr/local` with :
 
 To change the installation you can modify some conventional variables into your Makefile  
 
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 package_name=main  
 prefix=/usr  
 libdir=$(prefix)/lib  
@@ -192,35 +192,35 @@ all:
 ```  
 
 ## create a full project:
-*Makefile*:
-: ```
+*Makefile*:  
+> ```
 include scripts.mk  
 all:  
 	make $(build)=src/main.mk  
 	make $(build)=data/conf.mk  
 ```  
   
-*src/main.mk*:
-: ```
+*src/main.mk*:  
+> ```
 subdir+=lib/test.mk  
 bin-y+=main  
 main_SOURCES:=main.c
 main_LIBRARY:=test  
 ```  
   
-*src/lib/test.mk*:
-: ```
+*src/lib/test.mk*:  
+> ```
 lib-y+=test  
 test_SOURCES:=test.c
 ```  
    
-*data/conf.mk*:
-: ```
+*data/conf.mk*:  
+> ```
 data-y+=main.conf  
 ```  
    
 call  
-: ```  
+> ```  
 $ mkdir  obj
 $ cd  obj
 $ make -f ../Makefile  
