@@ -156,9 +156,9 @@ Your main Makefile has to retrieve the `scripts.mk` file :
 *Makefile*:  
 > ```
 srcdir=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))  
-  
+#  
 bin-y+=main  
-include $(srcdir)/scripts.mk
+include $(srcdir)/scripts.mk  
 ```  
   
 call  
