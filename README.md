@@ -149,8 +149,8 @@ In this example `makemore` generates `config.h` which contains
 
 Build your project outside the source tree  
 ------------------------------------------
-Your main Makefile has to retrieve the `scripts.mk` file : 
-: * A solution is to copy this file into the build directory.  
+Your main Makefile has to retrieve the `scripts.mk` file :  
+ * A solution is to copy this file into the build directory.  
  * Another solution is to modify your Makefile like this:
 
 *Makefile*:  
@@ -171,8 +171,8 @@ $ make -f ../Makefile
 
 Install your project  
 --------------------
-The normal installation is localized to `prefix=/usr/local` with :
-: * binary into `$(prefix)/bin`
+The normal installation is localized to `prefix=/usr/local` with :  
+ * binary into `$(prefix)/bin`
  * library into `$(prefix)/lib`
  * modules into `$(prefix)/lib/$(package_name)`
  * data into `$(prefix)/share/$(package_name)`
