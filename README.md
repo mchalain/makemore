@@ -11,10 +11,10 @@ Create simple binaries
   
 ### create the "main" application with the file main.c:
 *Makefile*:
-: ```
+: `
 bin-y+=main  
 include scripts.mk  
-```  
+`  
 
 call  
 
