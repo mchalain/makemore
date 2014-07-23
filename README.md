@@ -13,7 +13,7 @@ Create simple binaries
 *Makefile*:
 : ```
 bin-y+=main  
-include scripts.mk
+include scripts.mk  
 ```  
 
 call  
@@ -156,6 +156,7 @@ Your main Makefile has to retrieve the `scripts.mk` file :
 *Makefile*:
 : ```
 srcdir=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))  
+  
 bin-y+=main  
 include $(srcdir)/scripts.mk
 ```  
