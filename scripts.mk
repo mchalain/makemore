@@ -33,15 +33,17 @@ data-y:=
 
 srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
-ifneq ($(CONFIG),)
+builddir?=$(CURDIR:%/=%)
+
+CONFIG?=config
 include $(srcdir:%/=%)/$(CONFIG)
 	# CONFIG could define LD CC or/and CFLAGS
 	# CONFIG must be included before "Commands for build and link"
-endif
+
 ifneq ($(file),)
 include $(srcdir:%/=%)/$(file)
 src=$(patsubst %/,%,$(srcdir:%/=%)/$(dir $(file)))
-obj=$(patsubst %/,%,$(CURDIR:%/=%)/$(dir $(file)))
+obj=$(patsubst %/,%,$(builddir)/$(dir $(file)))
 endif
 
 ##
@@ -53,9 +55,10 @@ INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL)
 INSTALL_DATA?=$(INSTALL) -m 644
 
-CC?=$(CROSS_COMPILE)gcc
-LD?=$(CROSS_COMPILE)gcc
-AR?=$(CROSS_COMPILE)ar
+CC=$(CROSS_COMPILE)gcc
+CXX=$(CROSS_COMPILE)g++
+LD=$(CROSS_COMPILE)gcc
+AR=$(CROSS_COMPILE)ar
 RANLIB?=$(CROSS_COMPILE)ranlib
 ifeq ($(findstring gcc,$(LD)),gcc)
 ldgcc=-Wl,$(1),$(2)
@@ -89,11 +92,22 @@ endif
 ##
 # objects recipes generation
 ##
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs:=$($(t)_SOURCES:%.c=%.o)))
+obj=$(patsubst %/,%,$(builddir)/$(dir $(file)))
+
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs:=$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))
 target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $($(t)-objs), $(addprefix $(obj)/,$($(t)-objs)), $(obj)/$(t).o))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(s:%.c=%)_CFLAGS:=$($(t)_CFLAGS))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_CFLAGS+=$($(s:%.c=%)_CFLAGS)) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_CFLAGS+=$($(s:%.cpp=%)_CFLAGS)) ))
 
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(s:%.c=%)_CFLAGS+=$($(t)_CFLAGS)) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(s:%.cpp=%)_CFLAGS+=$($(t)_CFLAGS)) ))
+
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LDFLAGS+=$($(s:%.c=%)_LDFLAGS)) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LDFLAGS+=$($(s:%.cpp=%)_LDFLAGS)) ))
+
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LIBRARY+=$($(s:%.c=%)_LIBRARY)) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LIBRARY+=$($(s:%.cpp=%)_LIBRARY)) ))
 ##
 # targets recipes generation
 ##
@@ -197,8 +211,10 @@ quiet_cmd_clean_dir=$(if $(2),CLEAN $(notdir $(2)))
 RPATH=$(wildcard $(addsuffix /.,$(wildcard $(CURDIR:%/=%)/* $(obj)/*)))
 quiet_cmd_cc_o_c=CC $*
  cmd_cc_o_c=$(CC) $(CFLAGS) $($*_CFLAGS) -c -o $@ $<
+quiet_cmd_cc_o_cpp=CXX $*
+ cmd_cc_o_cpp=$(CXX) $(CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_ld_bin=LD $*
- cmd_ld_bin=$(LD) $(LDFLAGS) $($*_LDFLAGS) -o $@ $^ $(addprefix -L,$(RPATH)) $(LIBRARY:%=-l%) $($*_LIBRARY:%=-l%)
+ cmd_ld_bin=$(LD) -o $@ $^ $(addprefix -L,$(RPATH)) $(LDFLAGS) $($*_LDFLAGS) $(LIBRARY:%=-l%) $($*_LIBRARY:%=-l%) -lc
 quiet_cmd_ld_slib=LD $*
  cmd_ld_slib=$(RM) $@ && \
 	$(AR) -cvq $@ $^ > /dev/null && \
@@ -212,6 +228,9 @@ quiet_cmd_ld_dlib=LD $*
 .SECONDEXPANSION:
 $(obj)/%.o:$(src)/%.c
 	@$(call cmd,cc_o_c)
+
+$(obj)/%.o:$(src)/%.cpp
+	@$(call cmd,cc_o_cpp)
 
 $(obj)/:
 	$(Q)mkdir -p $@
@@ -232,7 +251,7 @@ $(bin-target): $(obj)/%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj)/,$
 
 .PHONY:$(subdir-target)
 $(subdir-target): $(srcdir:%/=%)/%:
-	$(Q)$(MAKE) $(build)=$*
+	$(Q)$(MAKE) -C $(dir $*) builddir=$(builddir) $(build)=$*
 ##
 # Commands for install
 ##

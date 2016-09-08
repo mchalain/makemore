@@ -77,6 +77,15 @@ call
  include scripts.mk
 ```  
 
+### create the "main" application with compilator flags:
+*Makefile*:  
+> ```
+ bin-y+=main  
+ main_CFLAGS:=-g -DTEST  
+ main_LDFLAGS:=-L../test  
+ include scripts.mk
+```  
+
 ### create the main application with source files into src directory:
 *Makefile*:  
 > ```
@@ -132,12 +141,29 @@ or to exclude some source file to the build
 CONFIG=config
 bin-y+=main
 main_SOURCES:=main.c
-ifeq ($(CONFIG_NO_BUILD),y)  
-main_SOURCES+=test  
+ifeq ($(CONFIG_TEST),y)  
+main_SOURCES+=test.c  
+main_CFLAGS+=-DTEST  
 endif  
 include scripts.mk
 ```  
   
+or
+*Makefile*:  
+> ```
+CONFIG=config
+bin-y+=main
+main_SOURCES:=main.c
+main_SOURCES-$(CONFIG_TEST):=test.c
+test_CFLAGS+=-DTEST  
+include scripts.mk
+```  
+  
+Note the difference between the both solutions:
+ * first the CFLAGS is associated to the binary : main_CFLAGS.
+ * second the CFLAGS is associated to the source file : test_CFLAGS.
+
+
 During the build step, `makemore` generates a `$(CONFIG).h` file which will contains the definition of your configuration.  
 In this example `makemore` generates `config.h` which contains
 
