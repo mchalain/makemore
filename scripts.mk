@@ -126,9 +126,9 @@ subdir-target+=$(wildcard $(addprefix $(src)/,$(addsuffix /*$(makefile-ext:%=.%)
 subdir-target+=$(if $(strip $(subdir-target)),,$(wildcard $(addprefix $(src)/,$(subdir-y))))
 
 targets:=
-targets+=$(lib-static-target)
-targets+=$(modules-target)
 targets+=$(lib-dynamic-target)
+targets+=$(modules-target)
+targets+=$(lib-static-target)
 targets+=$(bin-target)
 
 ##
