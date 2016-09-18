@@ -35,10 +35,12 @@ srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 builddir?=$(CURDIR:%/=%)
 
+# CONFIG could define LD CC or/and CFLAGS
+# CONFIG must be included before "Commands for build and link"
 CONFIG?=config
+ifneq ($(wildcard $(srcdir:%/=%)/$(CONFIG)),)
 include $(srcdir:%/=%)/$(CONFIG)
-	# CONFIG could define LD CC or/and CFLAGS
-	# CONFIG must be included before "Commands for build and link"
+endif
 
 ifneq ($(file),)
 include $(srcdir:%/=%)/$(file)
