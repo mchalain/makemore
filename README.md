@@ -77,7 +77,7 @@ call
  include scripts.mk
 ```  
 
-### create the "main" application with compilator flags:
+### create the "main" application with compiler flags:
 *Makefile*:  
 > ```
  bin-y+=main  
