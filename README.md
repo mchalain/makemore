@@ -216,6 +216,9 @@ include scripts.mk
 all:  
 	make $(build)=src/main.mk  
 ```  
+To package the binary, it is possible to modify the installation directory with a prefixing destination directory
+
+	make DESTDIR=/my/path/to/package install
 
 ## create a full project:
 *Makefile*:  
