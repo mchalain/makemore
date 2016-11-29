@@ -44,8 +44,13 @@ endif
 
 ifneq ($(file),)
 include $(srcdir:%/=%)/$(file)
+endif
+
 src=$(patsubst %/,%,$(srcdir:%/=%)/$(dir $(file)))
+ifeq ($(findstring $(builddir), $(builddir:/%=%)),)
 obj=$(patsubst %/,%,$(builddir)/$(dir $(file)))
+else
+obj=$(patsubst %/,%,$(srcdir:%/=%)/$(builddir)/$(dir $(file)))
 endif
 
 ##
@@ -94,7 +99,6 @@ endif
 ##
 # objects recipes generation
 ##
-obj=$(patsubst %/,%,$(builddir)/$(dir $(file)))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs:=$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))
 target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $($(t)-objs), $(addprefix $(obj)/,$($(t)-objs)), $(obj)/$(t).o))
