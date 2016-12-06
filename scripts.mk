@@ -62,11 +62,37 @@ INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL)
 INSTALL_DATA?=$(INSTALL) -m 644
 
-CC=$(CROSS_COMPILE)gcc
-CXX=$(CROSS_COMPILE)g++
-LD=$(CROSS_COMPILE)gcc
-AR=$(CROSS_COMPILE)ar
-RANLIB?=$(CROSS_COMPILE)ranlib
+ifneq ($(CROSS_COMPILE),)
+	CC=$(CROSS_COMPILE:%-=%)-gcc
+	CXX=$(CROSS_COMPILE:%-=%)-g++
+	LD=$(CROSS_COMPILE:%-=%)-gcc
+	AR=$(CROSS_COMPILE:%-=%)-ar
+	RANLIB=$(CROSS_COMPILE:%-=%)-ranlib
+	HOSTCC=gcc
+	HOSTCXX=g++
+	HOSTLD=gcc
+	HOSTAR=ar
+	HOSTRANLIB=ranlib
+else
+ifeq ($(CC),)
+# CC is not set use gcc as default compiler
+	CC=gcc
+	CXX=g++
+	LD=gcc
+	AR=ar
+	RANLIB=ranlib
+else ifeq ($(CC),cc)
+# if cc is a link on gcc, prefer to use directly gcc for ld
+CCVERSION=$(shell $(CC) --version)
+ifneq ($(findstring GCC,$(CCVERSION)), )
+	CC=gcc
+	CXX=g++
+	LD=gcc
+	AR=ar
+	RANLIB=ranlib
+endif
+endif 
+endif
 ifeq ($(findstring gcc,$(LD)),gcc)
 ldgcc=-Wl,$(1),$(2)
 else
@@ -91,7 +117,9 @@ pkglibdir:=$(pkglibdir:"%"=%)
 ifneq ($(file),)
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
 CFLAGS+=-I$(src) -I$(CURDIR) -I.
-LDFLAGS+=-L$(obj) $(call ldgcc,-rpath,$(libdir))
+LIBRARY+=
+LDFLAGS+=-L$(builddir)
+LDFLAGS+=$(call ldgcc,-rpath,$(libdir)) $(call ldgcc,-rpath-link,$(obj))
 else
 export prefix bindir sbindir libdir includedir datadir pkglibdir srcdir
 endif
