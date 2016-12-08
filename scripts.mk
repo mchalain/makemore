@@ -210,7 +210,7 @@ install+=$(data-install)
 ##
 action:=_build
 build:=$(action) -f $(srcdir)/scripts.mk file
-.PHONY:_entry _build _install _clean _distclean
+.PHONY:_entry _build _install _clean _distclean _check
 _entry: default_action
 
 _build: $(obj)/ $(if $(wildcard $(CONFIG)),$(join $(CURDIR:%/=%)/,$(CONFIG:%=%.h))) $(subdir-target) $(targets)
@@ -234,6 +234,10 @@ _distclean: $(subdir-target) _clean_objs
 	$(Q)$(call cmd,clean,$(wildcard $(targets)))
 	$(Q)$(call cmd,clean_dir,$(filter-out $(src),$(obj)))
 
+_check: action:=_check
+_check: build:=$(action) -f $(srcdir)/scripts.mk file
+_check: $(subdir-target) $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))
+
 clean: action:=_clean
 clean: build:=$(action) -f $(srcdir)/scripts.mk file
 clean: $(.DEFAULT_GOAL)
@@ -247,6 +251,10 @@ distclean:
 install: action:=_install
 install: build:=$(action) -f $(srcdir)/scripts.mk file
 install: $(.DEFAULT_GOAL)
+
+check: action:=_check
+check: build:=$(action) -f $(srcdir)/scripts.mk file
+check: $(.DEFAULT_GOAL)
 
 default_action:
 	$(Q)$(MAKE) $(build)=$(file)
@@ -279,6 +287,12 @@ quiet_cmd_ld_slib=LD $*
 quiet_cmd_ld_dlib=LD $*
  cmd_ld_dlib=$(LD) $(LDFLAGS) $($*_LDFLAGS) -shared $(call ldgcc,-soname,$(notdir $@)) -o $@ $^ $(addprefix -L,$(RPATH)) $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 
+checkoption:=--exact-version
+quiet_cmd_check_lib=CHECK $*
+prepare_check=$(if $(filter %-, $1),$(eval checkoption:=--atleast-version),$(if $(filter -%, $1),$(eval checkoption:=--max-version)))
+cmd_check_lib=$(if $(findstring $(3:%-=%), $3),$(if $(findstring $(3:-%=%), $3),,$(eval checkoption:=--atleast-version),$(eval checkoption:=--max-version))) \
+	$(PKGCONFIG) --print-errors $(checkoption) $(subst -,,$3) lib$2
+
 ##
 # build rules
 ##
@@ -309,6 +323,10 @@ $(bin-target): $(obj)/%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj)/,$
 .PHONY:$(subdir-target)
 $(subdir-target): $(srcdir:%/=%)/%:
 	$(Q)$(MAKE) -C $(dir $*) builddir=$(builddir) $(build)=$*
+
+$(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY)): %:
+	@$(call prepare_check,$(lastword $(subst {, ,$(subst },,$@))))
+	@$(if $(findstring $(words $(subst {, ,$(subst },,$@))),2),$(call cmd,check_lib,$(firstword $(subst {, ,$(subst },,$@))),$(lastword $(subst {, ,$(subst },,$@)))))
 
 ##
 # Commands for install
