@@ -61,6 +61,7 @@ AWK?=awk
 INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL)
 INSTALL_DATA?=$(INSTALL) -m 644
+PKGCONFIG?=pkg-config
 
 ifneq ($(CROSS_COMPILE),)
 	CC=$(CROSS_COMPILE:%-=%)-gcc
@@ -151,8 +152,8 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_LDFLAGS+=$(shell pkg-config --libs-only-L lib$(l) 2> /dev/null) ) ))
 
-$(foreach l, $(LIBRARY),$(eval CFLAGS+=$(shell pkg-config --cflags lib$(l) 2> /dev/null) ) )
-$(foreach l, $(LIBRARY),$(eval LDFLAGS+=$(shell pkg-config --libs-only-L lib$(l) 2> /dev/null) ) )
+$(foreach l, $(LIBRARY),$(eval CFLAGS+=$(shell $(PKGCONFIG) --cflags lib$(l:%{=%) 2> /dev/null) ) )
+$(foreach l, $(LIBRARY),$(eval LDFLAGS+=$(shell $(PKGCONFIG) --libs-only-L lib$(l:%{=%) 2> /dev/null) ) )
 
 # The Dynamic_Loader library (libdl) allows to load external libraries.
 # If this libraries has to link to the binary functions, 
@@ -265,13 +266,13 @@ quiet_cmd_cc_o_c=CC $*
 quiet_cmd_cc_o_cpp=CXX $*
  cmd_cc_o_cpp=$(CXX) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
 quiet_cmd_ld_bin=LD $*
- cmd_ld_bin=$(LD) -o $@ $^ $(addprefix -L,$(RPATH)) $(LDFLAGS) $($*_LDFLAGS) $($*_LDFLAGS-y) $(LIBRARY:%=-l%) $($*_LIBRARY:%=-l%) $($*_LIBRARY-y:%=-l%) -lc
+ cmd_ld_bin=$(LD) -o $@ $^ $(addprefix -L,$(RPATH)) $(LDFLAGS) $($*_LDFLAGS) $(LIBRARY:%=-l%) $($*_LIBRARY:%=-l%) -lc
 quiet_cmd_ld_slib=LD $*
  cmd_ld_slib=$(RM) $@ && \
 	$(AR) -cvq $@ $^ > /dev/null && \
 	$(RANLIB) $@
 quiet_cmd_ld_dlib=LD $*
- cmd_ld_dlib=$(LD) $(LDFLAGS) $($*_LDFLAGS) $($*_LDFLAGS-y) -shared $(call ldgcc,-soname,$(notdir $@)) -o $@ $^ $(addprefix -L,$(RPATH)) $(LIBRARY:%=-l%) $($*_LIBRARY:%=-l%) $($*_LIBRARY-y:%=-l%)
+ cmd_ld_dlib=$(LD) $(LDFLAGS) $($*_LDFLAGS) -shared $(call ldgcc,-soname,$(notdir $@)) -o $@ $^ $(addprefix -L,$(RPATH)) $(LIBRARY:%=-l%) $($*_LIBRARY:%=-l%)
 
 ##
 # build rules
@@ -303,6 +304,7 @@ $(bin-target): $(obj)/%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj)/,$
 .PHONY:$(subdir-target)
 $(subdir-target): $(srcdir:%/=%)/%:
 	$(Q)$(MAKE) -C $(dir $*) builddir=$(builddir) $(build)=$*
+
 ##
 # Commands for install
 ##
