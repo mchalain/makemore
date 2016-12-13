@@ -30,6 +30,7 @@ lib-y:=
 slib-y:=
 modules-y:=
 data-y:=
+hostbin-y:=
 
 srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
@@ -52,7 +53,9 @@ obj=$(patsubst %/,%,$(builddir)/$(dir $(file)))
 else
 obj=$(patsubst %/,%,$(srcdir:%/=%)/$(builddir)/$(dir $(file)))
 endif
+hostobj=$(patsubst %/,%,$(srcdir:%/=%)/host/$(dir $(file)))
 
+PATH:=$(value PATH):$(hostobj)
 ##
 # default Macros for installation
 ##
@@ -93,6 +96,11 @@ ifneq ($(findstring GCC,$(CCVERSION)), )
 	RANLIB=ranlib
 endif
 endif 
+	HOSTCC=$(CC)
+	HOSTCXX=$(CXX)
+	HOSTLD=$(LD)
+	HOSTAR=$(AR)
+	HOSTRANLIB=$(RANLIB)
 endif
 ifeq ($(findstring gcc,$(LD)),gcc)
 ldgcc=-Wl,$(1),$(2)
@@ -129,8 +137,11 @@ endif
 # objects recipes generation
 ##
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs:=$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs+=$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))
 target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $($(t)-objs), $(addprefix $(obj)/,$($(t)-objs)), $(obj)/$(t).o))
+
+$(foreach t,$(hostbin-y), $(eval $(t)-objs:=$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))
+target-hostobjs:=$(foreach t, $(hostbin-y), $(if $($(t)-objs), $(addprefix $(hostobj)/,$($(t)-objs)), $(hostobj)/$(t).o))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_CFLAGS+=$($(s:%.c=%)_CFLAGS)) ))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_CFLAGS+=$($(s:%.cpp=%)_CFLAGS)) ))
@@ -155,10 +166,10 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_LIBS+=$(firstword $(subst {, ,$(subst },,$(l)))) ) ))
 $(foreach l, $(LIBRARY),$(eval LIBS+=$(firstword $(subst {, ,$(subst },,$(l)))) ) )
 
-$(foreach l, $(LIBS),$(eval CFLAGS+=$(shell $(PKGCONFIG) --cflags lib$(l) 2> /dev/null) $(shell $(PKGCONFIG) --cflags $(l) 2> /dev/null) ) )
-$(foreach l, $(LIBS),$(eval LDFLAGS+=$(shell $(PKGCONFIG) --libs-only-L lib$(l) 2> /dev/null) $(shell $(PKGCONFIG) --libs-only-L $(l) 2> /dev/null) ) )
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBS),$(eval CFLAGS+=$(shell $(PKGCONFIG) --cflags lib$(l) 2> /dev/null) $(shell $(PKGCONFIG) --cflags $(l) 2> /dev/null))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBS),$(eval CFLAGS+=$(shell $(PKGCONFIG) --cflags lib$(l) 2> /dev/null) $(shell $(PKGCONFIG) --cflags $(l) 2> /dev/null))))
+$(foreach l, $(LIBS),$(eval CFLAGS+=$(shell $(PKGCONFIG) --cflags lib$(l) 2> /dev/null) ) )
+$(foreach l, $(LIBS),$(eval LDFLAGS+=$(shell $(PKGCONFIG) --libs-only-L lib$(l) 2> /dev/null) ) )
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBS),$(eval CFLAGS+=$(shell $(PKGCONFIG) --cflags lib$(l) 2> /dev/null))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBS),$(eval CFLAGS+=$(shell $(PKGCONFIG) --cflags lib$(l) 2> /dev/null))))
 
 # The Dynamic_Loader library (libdl) allows to load external libraries.
 # If this libraries has to link to the binary functions, 
@@ -178,6 +189,7 @@ lib-dynamic-target:=$(addprefix $(obj)/,$(addsuffix $(dlib-ext:%=.%),$(lib-y)))
 endif
 modules-target:=$(addprefix $(obj)/,$(addsuffix $(dlib-ext:%=.%),$(modules-y)))
 bin-target:=$(addprefix $(obj)/,$(addsuffix $(bin-ext:%=.%),$(bin-y) $(sbin-y)))
+hostbin-target:=$(addprefix $(hostobj)/,$(addsuffix $(bin-ext:%=.%),$(hostbin-y)))
 subdir-target:=$(wildcard $(addprefix $(src)/,$(addsuffix /Makefile,$(subdir-y))))
 subdir-target+=$(wildcard $(addprefix $(src)/,$(addsuffix /*$(makefile-ext:%=.%),$(subdir-y))))
 subdir-target+=$(if $(strip $(subdir-target)),,$(wildcard $(addprefix $(src)/,$(subdir-y))))
@@ -210,10 +222,14 @@ install+=$(data-install)
 ##
 action:=_build
 build:=$(action) -f $(srcdir)/scripts.mk file
+.DEFAULT_GOAL:=_entry
 .PHONY:_entry _build _install _clean _distclean _check
 _entry: default_action
 
-_build: $(obj)/ $(if $(wildcard $(CONFIG)),$(join $(CURDIR:%/=%)/,$(CONFIG:%=%.h))) $(subdir-target) $(targets)
+_hostbuild: $(if $(hostbin-y) , $(hostobj)/ $(hostbin-target))
+_configbuild: $(if $(wildcard $(CONFIG)),$(join $(CURDIR:%/=%)/,$(CONFIG:%=%.h)))
+
+_build: $(obj)/ _configbuild $(subdir-target) _hostbuild $(targets)
 	@:
 
 _install: action:=_install
@@ -226,7 +242,7 @@ _clean: build:=$(action) -f $(srcdir)/scripts.mk file
 _clean: $(subdir-target) _clean_objs
 
 _clean_objs:
-	$(Q)$(call cmd,clean,$(wildcard $(target-objs)))
+	$(Q)$(call cmd,clean,$(wildcard $(target-objs)) $(wildcard $(target-hostobjs)))
 
 _distclean: action:=_distclean
 _distclean: build:=$(action) -f $(srcdir)/scripts.mk file
@@ -260,6 +276,8 @@ default_action:
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
+all: default_action
+
 $(join $(CURDIR:%/=%)/,$(CONFIG:%=%.h)): $(srcdir:%/=%)/$(CONFIG)
 	@$(call cmd,config)
 
@@ -280,6 +298,12 @@ quiet_cmd_cc_o_cpp=CXX $*
  cmd_cc_o_cpp=$(CXX) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
 quiet_cmd_ld_bin=LD $*
  cmd_ld_bin=$(LD) -o $@ $^ $(addprefix -L,$(RPATH)) $(LDFLAGS) $($*_LDFLAGS) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
+quiet_cmd_hostcc_o_c=HOSTCC $*
+ cmd_hostcc_o_c=$(HOSTCC) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
+quiet_hostcmd_cc_o_cpp=HOSTCXX $*
+ cmd_hostcc_o_cpp=$(HOSTCXX) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
+quiet_cmd_hostld_bin=HOSTLD $*
+ cmd_hostld_bin=$(HOSTLD) -o $@ $^ $(addprefix -L,$(RPATH)) $(LDFLAGS) $($*_LDFLAGS) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 quiet_cmd_ld_slib=LD $*
  cmd_ld_slib=$(RM) $@ && \
 	$(AR) -cvq $@ $^ > /dev/null && \
@@ -306,6 +330,15 @@ $(obj)/%.o:$(src)/%.cpp
 $(obj)/:
 	$(Q)mkdir -p $@
 
+$(hostobj)/%.o:$(src)/%.c
+	@$(call cmd,hostcc_o_c)
+
+$(hostobj)/%.o:$(src)/%.cpp
+	@$(call cmd,hostcc_o_cpp)
+
+$(hostobj)/:
+	$(Q)mkdir -p $@
+
 $(lib-static-target): $(obj)/lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj)/,$$(%-objs)), $(obj)/%.o)
 	@$(call cmd,ld_slib)
 
@@ -317,8 +350,13 @@ $(modules-target): CFLAGS+=-fPIC
 $(modules-target): $(obj)/%$(dlib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj)/,$$(%-objs)), $(obj)/%.o)
 	@$(call cmd,ld_dlib)
 
+#$(bin-target): $(obj)/%$(bin-ext:%=.%): $$(if $$(%_SOURCES), $$(addprefix $(src)/,$$(%_SOURCES)), $(src)/%.c) 
 $(bin-target): $(obj)/%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj)/,$$(%-objs)), $(obj)/%.o)
 	@$(call cmd,ld_bin)
+
+$(hostbin-target): $(hostobj)/%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj)/,$$(%-objs)), $(hostobj)/%.o)
+	@echo $@ $<
+	@$(call cmd,hostld_bin)
 
 .PHONY:$(subdir-target)
 $(subdir-target): $(srcdir:%/=%)/%:
