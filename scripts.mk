@@ -226,10 +226,13 @@ build:=$(action) -f $(srcdir)/scripts.mk file
 .PHONY:_entry _build _install _clean _distclean _check
 _entry: default_action
 
+_info:
+	@:
+
 _hostbuild: $(if $(hostbin-y) , $(hostobj)/ $(hostbin-target))
 _configbuild: $(if $(wildcard $(CONFIG)),$(join $(CURDIR:%/=%)/,$(CONFIG:%=%.h)))
 
-_build: $(obj)/ _configbuild $(subdir-target) _hostbuild $(targets)
+_build: _info $(obj)/ _configbuild $(subdir-target) _hostbuild $(targets)
 	@:
 
 _install: action:=_install
