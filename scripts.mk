@@ -33,6 +33,7 @@ data-y:=
 hostbin-y:=
 
 srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+srcdir:=$(srcdir:%/=%)
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 builddir?=$(CURDIR:%/=%)
 
@@ -44,10 +45,11 @@ include $(srcdir:%/=%)/$(CONFIG)
 endif
 
 ifneq ($(file),)
-include $(srcdir:%/=%)/$(file)
+include $(file)
 endif
 
-src=$(patsubst %/,%,$(srcdir:%/=%)/$(dir $(file)))
+#src=$(patsubst %/,%,$(srcdir:%/=%)/$(dir $(file)))
+src=$(patsubst %/,%,$(dir $(file)))
 ifeq ($(findstring $(builddir), $(builddir:/%=%)),)
 obj=$(patsubst %/,%,$(builddir)/$(dir $(file)))
 else
@@ -190,9 +192,9 @@ endif
 modules-target:=$(addprefix $(obj)/,$(addsuffix $(dlib-ext:%=.%),$(modules-y)))
 bin-target:=$(addprefix $(obj)/,$(addsuffix $(bin-ext:%=.%),$(bin-y) $(sbin-y)))
 hostbin-target:=$(addprefix $(hostobj)/,$(addsuffix $(bin-ext:%=.%),$(hostbin-y)))
-subdir-target:=$(wildcard $(addprefix $(src)/,$(addsuffix /Makefile,$(subdir-y))))
-subdir-target+=$(wildcard $(addprefix $(src)/,$(addsuffix /*$(makefile-ext:%=.%),$(subdir-y))))
-subdir-target+=$(if $(strip $(subdir-target)),,$(wildcard $(addprefix $(src)/,$(subdir-y))))
+subdir-target:=$(wildcard $(addsuffix /Makefile,$(subdir-y)))
+subdir-target+=$(wildcard $(addsuffix /*$(makefile-ext:%=.%),$(subdir-y)))
+subdir-target+=$(if $(strip $(subdir-target)),,$(wildcard $(addprefix $(src)/,$(addsuffix /,$(subdir-y)))))
 
 targets:=
 targets+=$(lib-dynamic-target)
@@ -300,13 +302,13 @@ quiet_cmd_cc_o_c=CC $*
 quiet_cmd_cc_o_cpp=CXX $*
  cmd_cc_o_cpp=$(CXX) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
 quiet_cmd_ld_bin=LD $*
- cmd_ld_bin=$(LD) -o $@ $^ $(addprefix -L,$(RPATH)) $(LDFLAGS) $($*_LDFLAGS) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
+ cmd_ld_bin=$(LD) -o $@ $^ $(LDFLAGS) $($*_LDFLAGS) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 quiet_cmd_hostcc_o_c=HOSTCC $*
  cmd_hostcc_o_c=$(HOSTCC) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
 quiet_hostcmd_cc_o_cpp=HOSTCXX $*
  cmd_hostcc_o_cpp=$(HOSTCXX) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
 quiet_cmd_hostld_bin=HOSTLD $*
- cmd_hostld_bin=$(HOSTLD) -o $@ $^ $(addprefix -L,$(RPATH)) $(LDFLAGS) $($*_LDFLAGS) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
+ cmd_hostld_bin=$(HOSTLD) -o $@ $^ $(LDFLAGS) $($*_LDFLAGS) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 quiet_cmd_ld_slib=LD $*
  cmd_ld_slib=$(RM) $@ && \
 	$(AR) -cvq $@ $^ > /dev/null && \
@@ -358,12 +360,12 @@ $(bin-target): $(obj)/%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj)/,$
 	@$(call cmd,ld_bin)
 
 $(hostbin-target): $(hostobj)/%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj)/,$$(%-objs)), $(hostobj)/%.o)
-	@echo $@ $<
 	@$(call cmd,hostld_bin)
 
 .PHONY:$(subdir-target)
-$(subdir-target): $(srcdir:%/=%)/%:
-	$(Q)$(MAKE) -C $(dir $*) builddir=$(builddir) $(build)=$*
+#$(subdir-target): $(srcdir:%/=%)/%:
+$(subdir-target): %:
+	$(Q)$(MAKE) -C $(dir $*) builddir=$(builddir) $(build)=$(notdir $*)
 
 $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY)): %:
 	@$(call prepare_check,$(lastword $(subst {, ,$(subst },,$@))))
