@@ -1,3 +1,4 @@
+makemore:=$(notdir $(lastword $(MAKEFILE_LIST)))
 ifeq ($(inside_makemore),)
 inside_makemore:=yes
 ##
@@ -218,7 +219,7 @@ install+=$(data-install)
 # main entries
 ##
 action:=_build
-build:=$(action) -f $(srcdir)/scripts.mk file
+build:=$(action) -f $(srcdir)$(makemore) file
 .DEFAULT_GOAL:=_entry
 .PHONY:_entry _build _install _clean _distclean _check
 _entry: default_action
@@ -233,43 +234,43 @@ _build: _info $(obj) _configbuild $(subdir-target) _hostbuild $(targets)
 	@:
 
 _install: action:=_install
-_install: build:=$(action) -f $(srcdir)/scripts.mk file
+_install: build:=$(action) -f $(srcdir)$(makemore) file
 _install: $(install) $(subdir-target)
 	@:
 
 _clean: action:=_clean
-_clean: build:=$(action) -f $(srcdir)/scripts.mk file
+_clean: build:=$(action) -f $(srcdir)$(makemore) file
 _clean: $(subdir-target) _clean_objs
 
 _clean_objs:
 	$(Q)$(call cmd,clean,$(wildcard $(target-objs)) $(wildcard $(target-hostobjs)))
 
 _distclean: action:=_distclean
-_distclean: build:=$(action) -f $(srcdir)/scripts.mk file
+_distclean: build:=$(action) -f $(srcdir)$(makemore) file
 _distclean: $(subdir-target) _clean_objs
 	$(Q)$(call cmd,clean,$(wildcard $(targets)))
 	$(Q)$(call cmd,clean_dir,$(filter-out $(src),$(obj)))
 
 _check: action:=_check
-_check: build:=$(action) -f $(srcdir)/scripts.mk file
+_check: build:=$(action) -f $(srcdir)$(makemore) file
 _check: $(subdir-target) $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))
 
 clean: action:=_clean
-clean: build:=$(action) -f $(srcdir)scripts.mk file
+clean: build:=$(action) -f $(srcdir)$(makemore) file
 clean: $(.DEFAULT_GOAL)
 
 distclean: action:=_distclean
-distclean: build:=$(action) -f $(srcdir)scripts.mk file
+distclean: build:=$(action) -f $(srcdir)$(makemore) file
 distclean: $(.DEFAULT_GOAL)
 distclean:
 	$(Q)$(call cmd,clean,$(wildcard $(CURDIR)$(CONFIG:%=%.h)))
 
 install: action:=_install
-install: build:=$(action) -f $(srcdir)scripts.mk file
+install: build:=$(action) -f $(srcdir)$(makemore) file
 install: $(.DEFAULT_GOAL)
 
 check: action:=_check
-check: build:=$(action) -f $(srcdir)scripts.mk file
+check: build:=$(action) -f $(srcdir)$(makemore) file
 check: $(.DEFAULT_GOAL)
 
 default_action:
