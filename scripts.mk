@@ -59,8 +59,10 @@ INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL)
 INSTALL_DATA?=$(INSTALL) -m 644
 PKGCONFIG?=pkg-config
+YACC=bison
 
 ifneq ($(CROSS_COMPILE),)
+	AS=$(CROSS_COMPILE:%-=%)-as
 	CC=$(CROSS_COMPILE:%-=%)-gcc
 	CXX=$(CROSS_COMPILE:%-=%)-g++
 	LD=$(CROSS_COMPILE:%-=%)-gcc
@@ -74,6 +76,7 @@ ifneq ($(CROSS_COMPILE),)
 else
 ifeq ($(CC),)
 # CC is not set use gcc as default compiler
+	AS=as
 	CC=gcc
 	CXX=g++
 	LD=gcc
@@ -131,7 +134,7 @@ endif
 # objects recipes generation
 ##
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs+=$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs+=$(patsubst %.Ss,%.o,$(patsubst %.S,%.o,$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))))
 target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $($(t)-objs), $(addprefix $(obj),$($(t)-objs)), $(obj)$(t).o))
 
 $(foreach t,$(hostbin-y), $(eval $(t)-objs:=$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))
@@ -223,8 +226,8 @@ _entry: default_action
 _info:
 	@:
 
-_hostbuild: $(if $(hostbin-y) , $(hostobj)/ $(hostbin-target))
-_configbuild: $(if $(wildcard $(CONFIG)),$(join $(CURDIR:%/=%)/,$(CONFIG:%=%.h)))
+_hostbuild: $(if $(hostbin-y) , $(hostobj) $(hostbin-target))
+_configbuild: $(if $(wildcard $(CONFIG)),$(join $(CURDIR),$(CONFIG:%=%.h)))
 
 _build: _info $(obj) _configbuild $(subdir-target) _hostbuild $(targets)
 	@:
@@ -289,6 +292,10 @@ quiet_cmd_clean_dir=$(if $(2),CLEAN $(notdir $(2)))
 # Commands for build and link
 ##
 RPATH=$(wildcard $(addsuffix /.,$(wildcard $(CURDIR:%/=%)/* $(obj)*)))
+quiet_cmd_yacc_y=YACC $*
+ cmd_yacc_y=$(YACC) -o $@ $<
+quiet_cmd_as_o_s=AS $*
+ cmd_as_o_s=$(AS) $(ASFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
 quiet_cmd_cc_o_c=CC $*
  cmd_cc_o_c=$(CC) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
 quiet_cmd_cc_o_cpp=CXX $*
@@ -318,6 +325,12 @@ cmd_check_lib=$(if $(findstring $(3:%-=%), $3),$(if $(findstring $(3:-%=%), $3),
 # build rules
 ##
 .SECONDEXPANSION:
+$(obj)%.tab.c:%.y
+	@$(call cmd,yacc_y)
+
+$(obj)%.o:%.s
+	@$(call cmd,as_o_s)
+
 $(obj)%.o:%.c
 	@$(call cmd,cc_o_c)
 
