@@ -209,11 +209,21 @@ bin-install:=$(addprefix $(bindir)/,$(addsuffix $(bin-ext:%=.%),$(bin-y)))
 sbin-install:=$(addprefix $(sbindir)/,$(addsuffix $(bin-ext:%=.%),$(sbin-y)))
 
 install:=
+ifneq ($(CROSS_COMPILE),)
+ifneq ($(DESTDIR),)
 install+=$(bin-install)
 install+=$(sbin-install)
 install+=$(lib-dynamic-install)
 install+=$(modules-install)
 install+=$(data-install)
+endif
+else
+install+=$(bin-install)
+install+=$(sbin-install)
+install+=$(lib-dynamic-install)
+install+=$(modules-install)
+install+=$(data-install)
+endif
 
 ##
 # main entries
