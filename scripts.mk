@@ -190,7 +190,8 @@ bin-target:=$(addprefix $(obj),$(addsuffix $(bin-ext:%=.%),$(bin-y) $(sbin-y)))
 hostbin-target:=$(addprefix $(hostobj),$(addsuffix $(bin-ext:%=.%),$(hostbin-y)))
 subdir-target:=$(wildcard $(addsuffix /Makefile,$(subdir-y)))
 subdir-target+=$(wildcard $(addsuffix /*$(makefile-ext:%=.%),$(subdir-y)))
-subdir-target+=$(if $(strip $(subdir-target)),,$(wildcard $(addsuffix /,$(subdir-y))))
+subdir-dir:=$(dir $(wildcard $(addsuffix /Makefile,$(subdir-y))))
+subdir-target+=$(wildcard $(filter-out $(subdir-dir:%/=%),$(subdir-y)))
 
 targets:=
 targets+=$(lib-dynamic-target)
