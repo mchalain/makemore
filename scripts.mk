@@ -179,7 +179,7 @@ $(foreach t,$(bin-y) $(sbin-y),$(if $(findstring dl, $($(t)_LIBRARY) $(LIBRARY))
 ##
 slib-y:=$(addprefix lib,$(slib-y))
 lib-y:=$(addprefix lib,$(lib-y))
-ifdef STATIC
+ifeq (STATIC,y)
 lib-static-target:=$(addprefix $(obj),$(addsuffix $(slib-ext:%=.%),$(slib-y) $(lib-y)))
 else
 lib-static-target:=$(addprefix $(obj),$(addsuffix $(slib-ext:%=.%),$(slib-y)))
