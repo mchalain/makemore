@@ -127,8 +127,10 @@ ifneq ($(file),)
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
 CFLAGS+=-I$(src) -I$(CURDIR) -I.
 LIBRARY+=
+ifneq ($(builddir),)
 LDFLAGS+=-L$(builddir)
-LDFLAGS+=$(call ldgcc,-rpath,$(libdir)) $(call ldgcc,-rpath-link,$(obj))
+endif
+LDFLAGS+=$(call ldgcc,-rpath,$(libdir))
 else
 export prefix bindir sbindir libdir includedir datadir pkglibdir srcdir
 endif
