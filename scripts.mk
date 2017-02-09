@@ -114,6 +114,8 @@ sbindir?=$(prefix)/sbin
 sbindir:=$(sbindir:"%"=%)
 libdir?=$(prefix)/lib
 libdir:=$(libdir:"%"=%)
+sysconfdir?=$(prefix)/etc
+sysconfdir:=$(sysconfdir:"%"=%)
 includedir?=$(prefix)/include
 includedir:=$(includedir:"%"=%)
 datadir?=$(prefix)/share/$(PACKAGE_NAME:"%"=%)
