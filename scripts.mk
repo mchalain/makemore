@@ -38,6 +38,11 @@ file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 
 # CONFIG could define LD CC or/and CFLAGS
 # CONFIG must be included before "Commands for build and link"
+CONFIGURE_STATUS:=configure.status
+ifneq ($(wildcard $(srcdir)$(CONFIGURE_STATUS)),)
+include $(srcdir)$(CONFIGURE_STATUS)
+endif
+
 CONFIG?=config
 ifneq ($(wildcard $(srcdir)$(CONFIG)),)
 include $(srcdir)$(CONFIG)

@@ -1,7 +1,8 @@
 #!/bin/bash
 
 CONFIG=config
-out=$CONFIG
+CONFIGURE_STATUS=configure.status
+out=$CONFIGURE_STATUS
 
 prefix=/usr/local
 function argument {
