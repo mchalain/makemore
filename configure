@@ -54,6 +54,9 @@ while [ "${1}" != "" ]; do
 			printf "\t--build=BUILD\tconfigure for building on BUILD [guessed]\n"
 			printf "\t--host=HOST\tcross-compile to build programs to run on HOST [BUILD]\n"
 			printf "\t--sysroot=DIR\tcross-compiler root directory [none]\n"
+			;;
+		*)
+			echo "bad argument"
 	esac
 	shift
 done
@@ -74,12 +77,16 @@ if [ -z ${sysconfdir} ]; then
 	sysconfdir=${prefix}/etc
 fi
 
+echo "#Makemore 1.0" > $out
 echo "prefix=\""$prefix"\"" >> $out
 echo "bindir=\""$bindir"\"" >> $out
 echo "sbindir=\""$sbindir"\"" >> $out
 echo "includedir=\""$includedir"\"" >> $out
 echo "libdir=\""$libdir"\"" >> $out
 echo "sysconfdir=\""$sysconfdir"\"" >> $out
+if [ $sysroot ]; then
+	echo "sysroot=\""$sysroot"\"" >> $out
+fi
 if [ $CROSS_COMPILER ]; then
 	echo "CROSS_COMPILER="$CROSS_COMPILER >> $out
 fi
