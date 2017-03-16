@@ -128,6 +128,11 @@ datadir:=$(datadir:"%"=%)
 pkglibdir?=$(libdir)/$(PACKAGE_NAME:"%"=%)
 pkglibdir:=$(pkglibdir:"%"=%)
 
+ifneq ($(sysroot),)
+CFLAGS+=-I$(sysroot)/usr/include
+LDFLAGS+=-L$(sysroot)/lib -L$(sysroot)/usr/lib
+endif
+
 ifneq ($(file),)
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
 CFLAGS+=-I$(src) -I$(CURDIR) -I.

@@ -35,6 +35,9 @@ while [ "${1}" != "" ]; do
 		--host*)
 			CROSS_COMPILER=$(argument ${1})
 			;;
+		--sysroot*)
+			sysroot=$(argument ${1})
+			;;
 		--help*)
 			echo "${0} [options]"
 			printf "Configuration:\n"
