@@ -206,6 +206,8 @@ subdir-target:=$(wildcard $(addsuffix /Makefile,$(subdir-y)))
 subdir-dir:=$(dir $(subdir-target))
 subdir-target+=$(wildcard $(addsuffix /*$(makefile-ext:%=.%),$(subdir-y)))
 subdir-target+=$(wildcard $(filter-out $(subdir-dir:%/=%),$(subdir-y)))
+subdir-project:=$(wildcard $(addsuffix /configure,$(subdir-y)))
+subdir-target:=$(filter-out $(subdir-project),$(subdir-target))
 
 targets:=
 targets+=$(lib-dynamic-target)
@@ -258,7 +260,7 @@ _info:
 _hostbuild: $(if $(hostbin-y) , $(hostobj) $(hostbin-target))
 _configbuild: $(if $(wildcard $(CONFIG)),$(join $(CURDIR)/,$(CONFIG:%=%.h)))
 
-_build: _info $(obj) _configbuild $(subdir-target) _hostbuild $(targets)
+_build: _info $(obj) _configbuild $(subdir-project) $(subdir-target) _hostbuild $(targets)
 	@:
 
 _install: action:=_install
@@ -396,7 +398,12 @@ $(bin-target): $(obj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(
 $(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)), $(hostobj)%.o)
 	@$(call cmd,hostld_bin)
 
-.PHONY:$(subdir-target)
+.PHONY:$(subdir-target) $(subdir-project)
+$(subdir-project): %:
+	$(Q)cd $(dir $*) && autoreconf -i
+	$(Q)cd $(dir $*) && ./configure
+	$(Q)cd $(dir $*) && $(MAKE)
+
 $(subdir-target): %:
 	$(Q)$(MAKE) -C $(dir $*) cwdir=$(cwd)$(dir $*) builddir=$(builddir) $(build)=$(notdir $*)
 
