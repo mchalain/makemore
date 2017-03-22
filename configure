@@ -96,3 +96,7 @@ fi
 if [ $CROSS_COMPILER ]; then
 	echo "CROSS_COMPILER="$CROSS_COMPILER >> $out
 fi
+
+if [ ! -e config -a -e default.config ]; then
+	cp default.config config
+fi
