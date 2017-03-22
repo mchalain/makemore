@@ -100,3 +100,8 @@ fi
 if [ ! -e config -a -e default.config ]; then
 	cp default.config config
 fi
+make check
+if [ $? != 0 ]; then
+	echo "binary dependences failed"
+	exit -1
+fi
