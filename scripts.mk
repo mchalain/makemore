@@ -36,6 +36,8 @@ hostbin-y:=
 srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 
+VERSIONFILE=version
+
 # CONFIG could define LD CC or/and CFLAGS
 # CONFIG must be included before "Commands for build and link"
 CONFIGURE_STATUS:=configure.status
@@ -261,8 +263,9 @@ _info:
 
 _hostbuild: $(if $(hostbin-y) , $(hostobj) $(hostbin-target))
 _configbuild: $(if $(wildcard $(CONFIG)),$(join $(CURDIR)/,$(CONFIG:%=%.h)))
+_versionbuild: $(if $(package) $(version), $(join $(CURDIR)/,$(VERSIONFILE:%=%.h)))
 
-_build: _info $(obj) _configbuild $(subdir-project) $(subdir-target) _hostbuild $(targets)
+_build: _info $(obj) $(subdir-project) $(subdir-target) _hostbuild $(targets)
 	@:
 
 _install: action:=_install
@@ -295,7 +298,8 @@ distclean: action:=_distclean
 distclean: build:=$(action) -f $(srcdir)$(makemore) file
 distclean: $(.DEFAULT_GOAL)
 distclean:
-	$(Q)$(call cmd,clean,$(wildcard $(CURDIR)$(CONFIG:%=%.h)))
+	$(Q)$(call cmd,clean,$(wildcard $(join $(CURDIR)/,$(CONFIG:%=%.h))))
+	$(Q)$(call cmd,clean,$(wildcard $(join $(CURDIR)/,$(VERSIONFILE:%=%.h))))
 
 install: action:=_install
 install: build:=$(action) -f $(srcdir)$(makemore) file
@@ -305,7 +309,7 @@ check: action:=_check
 check: build:=$(action) -s -f $(srcdir)$(makemore) file
 check: $(.DEFAULT_GOAL)
 
-default_action:
+default_action:  _configbuild _versionbuild
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
@@ -313,6 +317,13 @@ all: default_action
 
 $(join $(CURDIR)/,$(CONFIG:%=%.h)): $(srcdir)/$(CONFIG)
 	@$(call cmd,config)
+
+$(join $(CURDIR)/,$(VERSIONFILE:%=%.h)):
+	@echo '#ifndef __VERSION_H__' >> $@
+	@echo '#define __VERSION_H__' >> $@
+	@$(if $(version), echo '#define VERSION "'$(version)'"' >> $@)
+	@$(if $(package), echo '#define PACKAGE "'$(package)'"' >> $@)
+	@echo '#endif' >> $@
 
 ##
 # Commands for clean
