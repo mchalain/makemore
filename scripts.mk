@@ -65,6 +65,7 @@ TESTFILE:=makemore_test
 ##
 # not set variable if not into the build step
 AWK?=awk
+RM?=rm -f
 INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL)
 INSTALL_DATA?=$(INSTALL) -m 644
