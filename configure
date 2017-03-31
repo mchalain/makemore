@@ -1,6 +1,9 @@
 #!/bin/bash
 
-AWK=gawk
+AWK=awk
+GREP=grep
+SED=sed
+MAKE=make
 CONFIG=config
 CONFIGURE_STATUS=configure.status
 out=$CONFIGURE_STATUS
@@ -29,9 +32,9 @@ function help {
 	printf "\nFeatures enabling:\n"
 	for option in $OPTIONS
 	do
-		default=$(echo $option | sed 's/_/-/g' | sed 's/=/ /g' | ${AWK} '{print $2}')
+		default=$(echo $option | ${SED} 's/_/-/g' | ${SED} 's/=/ /g' | ${AWK} '{print $2}')
 		if [ "$default" == "y" -o  "$default" == "n" ]; then
-			enable=$(echo $option | sed 's/_/-/g' | sed 's/=/ /g' | ${AWK} '{print "--enable-"tolower($1)}')
+			enable=$(echo $option | ${SED} 's/_/-/g' | ${SED} 's/=/ /g' | ${AWK} '{print "--enable-"tolower($1)}')
 			if [ $(echo $enable | wc -c) -ge 17 ]; then
 				printf "\t$enable\tdefault:$default\n"
 			else
@@ -42,9 +45,9 @@ function help {
 	printf "\nFeatures:\n"
 	for option in $OPTIONS
 	do
-		default=$(echo $option | sed 's/_/-/g' | sed 's/=/ /g' | ${AWK} '{print $2}')
+		default=$(echo $option | ${SED} 's/_/-/g' | ${SED} 's/=/ /g' | ${AWK} '{print $2}')
 		if [ "$default" != "y" -a  "$default" != "n" ]; then
-			with=$(echo $option | sed 's/_/-/g' | sed 's/=/ /g' | ${AWK} '{print "--with-"tolower($1)}')
+			with=$(echo $option | ${SED} 's/_/-/g' | ${SED} 's/=/ /g' | ${AWK} '{print "--with-"tolower($1)}')
 			printf "\t$with=<value>\tdefault:$default\n"
 		fi
 	done
@@ -55,7 +58,7 @@ if [ ! -e ${CONFIG} -a -e default.config ]; then
 	cp default.config ${CONFIG}
 fi
 
-OPTIONS=$(cat ${CONFIG} | sed 's/\#.*//g')
+OPTIONS=$(cat ${CONFIG} | ${SED} 's/\#.*//g')
 error=n
 
 while [ "${1}" != "" ]; do
@@ -95,15 +98,15 @@ while [ "${1}" != "" ]; do
 			;;
 		*)
 			found=n
-			OPTION=$(echo ${1} | sed 's/=/ /g' | ${AWK} '{print $1}')
+			OPTION=$(echo ${1} | ${SED} 's/=/ /g' | ${AWK} '{print $1}')
 			for opt in $OPTIONS
 			do
-				default=$(echo $opt | sed 's/=/ /g' | ${AWK} '{print $2}')
-				option=$(echo $opt | sed 's/=/ /g' | ${AWK} '{print $1}')
+				default=$(echo $opt | ${SED} 's/=/ /g' | ${AWK} '{print $2}')
+				option=$(echo $opt | ${SED} 's/=/ /g' | ${AWK} '{print $1}')
 
-				enable=$(echo $opt | sed 's/_/-/g' | sed 's/=/ /g' | ${AWK} '{print "--enable-"tolower($1)}')
-				disable=$(echo $opt | sed 's/_/-/g' | sed 's/=/ /g' | ${AWK} '{print "--disable-"tolower($1)}')
-				with=$(echo $opt | sed 's/_/-/g' | sed 's/=/ /g' | ${AWK} '{print "--with-"tolower($1)}')
+				enable=$(echo $opt | ${SED} 's/_/-/g' | ${SED} 's/=/ /g' | ${AWK} '{print "--enable-"tolower($1)}')
+				disable=$(echo $opt | ${SED} 's/_/-/g' | ${SED} 's/=/ /g' | ${AWK} '{print "--disable-"tolower($1)}')
+				with=$(echo $opt | ${SED} 's/_/-/g' | ${SED} 's/=/ /g' | ${AWK} '{print "--with-"tolower($1)}')
 
 				if [ "$enable" == "$OPTION" ]; then
 					default=y
@@ -182,8 +185,8 @@ echo "# Configuration file set with ./configure" > ${CONFIG}
 printf "\nConfiguration:\n"
 for opt in $OPTIONS
 do
-	default=$(echo $opt | sed 's/=/ /g' | ${AWK} '{print $2}')
-	option=$(echo $opt | sed 's/=/ /g' | ${AWK} '{print $1}')
+	default=$(echo $opt | ${SED} 's/=/ /g' | ${AWK} '{print $2}')
+	option=$(echo $opt | ${SED} 's/=/ /g' | ${AWK} '{print $1}')
 	if [ $(echo $option | wc -c) -ge 15 ]; then
 		printf " $option:\t$default\n"
 	elif [ $(echo $option | wc -c) -ge 7 ]; then
