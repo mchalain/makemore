@@ -355,7 +355,8 @@ quiet_cmd_ld_dlib=LD $*
 
 checkoption:=--exact-version
 quiet_cmd_check_lib=CHECK $*
-cmd_check_lib=$(CC) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.c) $(LDFLAGS) $(addprefix -l, $2)
+cmd_check_lib=$(CC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(CFLAGS) && \
+	$(LD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
 prepare_check=$(if $(filter %-, $2),$(eval checkoption:=--atleast-version),$(if $(filter -%, $2),$(eval checkoption:=--max-version)))
 cmd_check2_lib=$(if $(findstring $(3:%-=%), $3),$(if $(findstring $(3:-%=%), $3),,$(eval checkoption:=--atleast-version),$(eval checkoption:=--max-version))) \
 	$(PKGCONFIG) --print-errors $(checkoption) $(subst -,,$3) lib$2
