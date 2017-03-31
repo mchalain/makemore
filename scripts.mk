@@ -116,6 +116,12 @@ else
 ldgcc=$(1) $(2)
 endif
 
+CC?=gcc
+CXX?=g++
+LD?=gcc
+AR?=ar
+RANLIB?=ranlib
+
 prefix?=/usr/local
 prefix:=$(prefix:"%"=%)
 bindir?=$(prefix)/bin
