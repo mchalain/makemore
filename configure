@@ -153,12 +153,6 @@ if [ -z ${sysconfdir} ]; then
 	sysconfdir=${prefix}/etc
 fi
 
-make check
-if [ $? != 0 ]; then
-	echo "binary dependences failed"
-	exit -1
-fi
-
 echo "#Makemore 1.0" > $out
 printf "\nInstallation:\n"
 echo "prefix=\""$prefix"\"" >> $out
@@ -183,6 +177,17 @@ if [ $CROSS_COMPILER ]; then
 fi
 
 echo "# Configuration file set with ./configure" > ${CONFIG}
+for opt in $OPTIONS
+do
+	echo $opt >> ${CONFIG}
+done
+
+${MAKE} check 2> /dev/null
+if [ $? != 0 ]; then
+	echo "binary dependences failed"
+	exit -1
+fi
+
 printf "\nConfiguration:\n"
 for opt in $OPTIONS
 do
@@ -195,5 +200,4 @@ do
 	else
 		printf " $option:\t\t\t$default\n"
 	fi
-	echo $opt >> ${CONFIG}
 done
