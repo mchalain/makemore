@@ -123,6 +123,7 @@ while [ "${1}" != "" ]; do
 				NEWOPTIONS="$NEWOPTIONS ${option}=${default}"
 			done
 			OPTIONS=$NEWOPTIONS
+			NEWOPTIONS=""
 			if [ $found == n -a $error == n ]; then
 				error=${1}
 			fi
