@@ -104,13 +104,16 @@ ifneq ($(findstring GCC,$(CCVERSION)), )
 endif 
 endif
 
+ARCH?=$(shell LANG=C $(CC) -v 2>&1 | grep Target | $(AWK) 'BEGIN {FS="[- ]"} {print $2}')
+libsuffix=$(findstring 64,$(ARCH))
+
 prefix?=/usr/local
 prefix:=$(prefix:"%"=%)
 bindir?=$(prefix)/bin
 bindir:=$(bindir:"%"=%)
 sbindir?=$(prefix)/sbin
 sbindir:=$(sbindir:"%"=%)
-libdir?=$(prefix)/lib
+libdir?=$(word 1,$(wildcard $(prefix)/lib$(libsuffix) $(prefix)/lib))
 libdir:=$(libdir:"%"=%)
 sysconfdir?=$(prefix)/etc
 sysconfdir:=$(sysconfdir:"%"=%)
