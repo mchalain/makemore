@@ -119,9 +119,9 @@ sysconfdir?=$(prefix)/etc
 sysconfdir:=$(sysconfdir:"%"=%)
 includedir?=$(prefix)/include
 includedir:=$(includedir:"%"=%)
-datadir?=$(prefix)/share/$(PACKAGE_NAME:"%"=%)
+datadir?=$(prefix)/share/$(package:"%"=%)
 datadir:=$(datadir:"%"=%)
-pkglibdir?=$(libdir)/$(PACKAGE_NAME:"%"=%)
+pkglibdir?=$(libdir)/$(package:"%"=%)
 pkglibdir:=$(pkglibdir:"%"=%)
 
 ifneq ($(sysroot),)
