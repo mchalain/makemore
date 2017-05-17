@@ -300,7 +300,7 @@ check: action:=_check
 check: build:=$(action) -s -f $(srcdir)$(makemore) file
 check: $(.DEFAULT_GOAL)
 
-default_action:  _configbuild _versionbuild
+default_action: _info _configbuild _versionbuild
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
