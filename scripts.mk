@@ -128,7 +128,6 @@ ifneq ($(sysroot),)
 SYSROOT+=--sysroot=$(sysroot)
 endif
 
-ifneq ($(file),)
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
 CFLAGS+=-I$(src) -I$(CURDIR) -I.
 LIBRARY+=
@@ -136,9 +135,8 @@ ifneq ($(builddir),)
 LDFLAGS+=-L$(builddir)
 endif
 LDFLAGS+=$(if $(strip $(libdir)),$(call ldgcc,-rpath,$(strip $(libdir))))
-else
-export prefix bindir sbindir libdir includedir datadir pkglibdir srcdir
-endif
+
+export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir
 
 ##
 # objects recipes generation
