@@ -101,10 +101,13 @@ ifneq ($(findstring GCC,$(CCVERSION)), )
 	LD=cc
 	HOSTLD=$(LD)
 	ldgcc=-Wl,$(1),$(2)
-endif 
+endif
+else ifneq ($(findstring gcc,$(CC)),)
+	LD=$(CC)
+	ldgcc=-Wl,$(1),$(2)
 endif
 
-ARCH?=$(shell LANG=C $(CC) -v 2>&1 | grep Target | $(AWK) 'BEGIN {FS="[- ]"} {print $2}')
+ARCH?=$(shell LANG=C $(CC) -v 2>&1 | grep Target | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
 libsuffix=$(findstring 64,$(ARCH))
 
 prefix?=/usr/local
