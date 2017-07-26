@@ -84,7 +84,6 @@ HOSTAR=$(AR)
 HOSTRANLIB=$(RANLIB)
 
 ldgcc=$(1) $(2)
-LDFLAGS+=-lc
 
 ifneq ($(CROSS_COMPILE),)
 	AS=$(CROSS_COMPILE:%-=%)-as
@@ -139,6 +138,7 @@ ifneq ($(builddir),)
 LDFLAGS+=-L$(builddir)
 endif
 LDFLAGS+=$(if $(strip $(libdir)),$(call ldgcc,-rpath,$(strip $(libdir))))
+LDFLAGS+=$(if $(strip $(pkglibdir)),$(call ldgcc,-rpath,$(strip $(pkglibdir))))
 
 export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir
 
