@@ -117,6 +117,7 @@ bindir:=$(bindir:"%"=%)
 sbindir?=$(prefix)/sbin
 sbindir:=$(sbindir:"%"=%)
 libdir?=$(word 1,$(wildcard $(prefix)/lib$(libsuffix) $(prefix)/lib))
+libdir:=$(if $(libdir), $(libdir),$(prefix)/lib)
 libdir:=$(libdir:"%"=%)
 sysconfdir?=$(prefix)/etc
 sysconfdir:=$(sysconfdir:"%"=%)
@@ -234,6 +235,7 @@ install+=$(lib-dynamic-install)
 install+=$(modules-install)
 install+=$(data-install)
 install+=$(sysconf-install)
+install+=$(include-install)
 endif
 else
 install+=$(bin-install)
@@ -242,6 +244,7 @@ install+=$(lib-dynamic-install)
 install+=$(modules-install)
 install+=$(data-install)
 install+=$(sysconf-install)
+install+=$(include-install)
 endif
 
 ##
@@ -265,7 +268,7 @@ _build: _info $(obj) $(subdir-project) $(subdir-target) _hostbuild $(targets)
 
 _install: action:=_install
 _install: build:=$(action) -f $(srcdir)$(makemore) file
-_install: $(install) $(subdir-target)
+_install: _info $(install) $(subdir-target)
 	@:
 
 _clean: action:=_clean
