@@ -132,11 +132,12 @@ SYSROOT+=--sysroot=$(sysroot)
 endif
 
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
-CFLAGS+=-I$(src) -I$(CURDIR) -I.
+CFLAGS+=-I$(src) -I$(CURDIR) -I. -I$(sysroot)$(includedir)
 LIBRARY+=
 ifneq ($(builddir),)
 LDFLAGS+=-L$(builddir)
 endif
+LDFLAGS+=-L$(sysroot)$(libdir)
 LDFLAGS+=$(if $(strip $(libdir)),$(call ldgcc,-rpath,$(strip $(libdir))))
 LDFLAGS+=$(if $(strip $(pkglibdir)),$(call ldgcc,-rpath,$(strip $(pkglibdir))))
 
