@@ -172,7 +172,7 @@ export package version prefix bindir sbindir libdir includedir datadir pkglibdir
 # objects recipes generation
 ##
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs+=$(patsubst %.Ss,%.o,$(patsubst %.S,%.o,$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs+=$(patsubst %.s,%.o,$(patsubst %.S,%.o,$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))))
 target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $($(t)-objs), $(addprefix $(obj),$($(t)-objs)), $(obj)$(t).o))
 
 $(foreach t,$(hostbin-y), $(eval $(t)-objs:=$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))
@@ -310,14 +310,15 @@ _install: _info $(install) $(subdir-target)
 _clean: action:=_clean
 _clean: build:=$(action) -f $(srcdir)$(makemore) file
 _clean: $(subdir-target) _clean_objs
+	$(Q)$(call cmd,clean,$(wildcard $(targets)))
+	$(Q)$(call cmd,clean,$(wildcard $(hostslib-target) $(hostbin-target)))
 
 _clean_objs:
 	$(Q)$(call cmd,clean,$(wildcard $(target-objs)) $(wildcard $(target-hostobjs)))
 
 _distclean: action:=_distclean
 _distclean: build:=$(action) -f $(srcdir)$(makemore) file
-_distclean: $(subdir-target) _clean_objs
-	$(Q)$(call cmd,clean,$(wildcard $(targets)))
+_distclean: $(subdir-target) _clean
 	$(Q)$(call cmd,clean_dir,$(filter-out $(src),$(obj)))
 
 _check: action:=_check
@@ -332,8 +333,10 @@ distclean: action:=_distclean
 distclean: build:=$(action) -f $(srcdir)$(makemore) file
 distclean: $(.DEFAULT_GOAL)
 distclean:
-	$(Q)$(call cmd,clean,$(wildcard $(join $(CURDIR)/,$(CONFIG:%=%.h))))
-	$(Q)$(call cmd,clean,$(wildcard $(join $(CURDIR)/,$(VERSIONFILE:%=%.h))))
+	$(Q)$(call cmd,clean_dir,$(wildcard $(buildpath:%=%/)host))
+	$(Q)$(call cmd,clean,$(wildcard $(configfile)))
+	$(Q)$(call cmd,clean,$(wildcard $(join $(obj),$(CONFIG:%=%.h))))
+	$(Q)$(call cmd,clean,$(wildcard $(join $(obj),$(VERSIONFILE:%=%.h))))
 
 install: action:=_install
 install: build:=$(action) -f $(srcdir)$(makemore) file
