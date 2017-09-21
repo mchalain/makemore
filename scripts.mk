@@ -93,7 +93,9 @@ INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL)
 INSTALL_DATA?=$(INSTALL) -m 644
 PKGCONFIG?=pkg-config
-YACC=bison
+YACC?=bison
+MOC?=moc$(QT:%=-%)
+UIC?=uic$(QT:%=-%)
 
 CC?=gcc
 CXX?=g++
@@ -171,6 +173,8 @@ export package version prefix bindir sbindir libdir includedir datadir pkglibdir
 ##
 # objects recipes generation
 ##
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)_SOURCES+=$(patsubst %.hpp,%.moc.cpp,$($(t)_QTHEADERS) $($(t)_QTHEADERS-y))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $(findstring .cpp, $(notdir $($(t)_SOURCES))), $(eval $(t)_LIBRARY+=stdc++)))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs+=$(patsubst %.s,%.o,$(patsubst %.S,%.o,$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES) $($(t)_SOURCES-y)))))))
 target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $($(t)-objs), $(addprefix $(obj),$($(t)-objs)), $(obj)$(t).o))
@@ -381,6 +385,10 @@ quiet_cmd_cc_o_c=CC $*
  cmd_cc_o_c=$(CC) $(SYSROOT) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
 quiet_cmd_cc_o_cpp=CXX $*
  cmd_cc_o_cpp=$(CXX) $(SYSROOT) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
+quiet_cmd_moc_hpp=QTMOC $*
+ cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) $($*_MOCFLAGS-y) -o $@ $<
+quiet_cmd_uic_hpp=QTUIC $*
+ cmd_uic_hpp=$(UIC) $< > $@
 quiet_cmd_ld_bin=LD $*
  cmd_ld_bin=$(LD) $(SYSROOT) -o $@ $^ $(LDFLAGS) $($*_LDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 quiet_cmd_hostcc_o_c=HOSTCC $*
@@ -426,6 +434,13 @@ $(obj)%.o:%.c
 
 $(obj)%.o:%.cpp
 	@$(call cmd,cc_o_cpp)
+
+$(obj)%.moc.cpp:$(obj)%.ui.hpp
+$(obj)%.moc.cpp:%.hpp
+	@$(call cmd,moc_hpp)
+
+$(obj)%.ui.hpp:%.ui
+	@$(call cmd,uic_hpp)
 
 $(hostobj)%.o:%.c
 	@$(call cmd,hostcc_o_c)
