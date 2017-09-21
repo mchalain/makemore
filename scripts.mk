@@ -73,6 +73,13 @@ ifneq ($(file),)
 include $(file)
 endif
 
+ifeq ($(obj),)
+ifneq ($(CROSS_COMPILE),)
+buildpath=$(join $(srcdir),$(CROSS_COMPILE))
+obj=$(addprefix $(buildpath:%=%/),$(cwdir))
+endif
+endif
+
 PATH:=$(value PATH):$(hostobj)
 TMPDIR:=/tmp
 TESTFILE:=makemore_test
