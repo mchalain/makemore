@@ -166,6 +166,7 @@ LDFLAGS+=-L.
 endif
 LDFLAGS+=-L$(sysroot)$(libdir)
 LDFLAGS+=$(if $(strip $(libdir)),$(call ldgcc,-rpath,$(strip $(libdir))))
+LDFLAGS+=-L$(sysroot)$(pkglibdir)
 LDFLAGS+=$(if $(strip $(pkglibdir)),$(call ldgcc,-rpath,$(strip $(pkglibdir))))
 
 export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir
@@ -520,4 +521,6 @@ quote="
 sharp=\#
 quiet_cmd_config=CONFIG $*
  cmd_config=$(AWK) -F= '$$1 != $(quote)$(quote) {print $(quote)$(sharp)define$(space)$(quote)$$1$(quote)$(space)$(quote)$$2}' $< > $@
+
+#if inside makemore
 endif
