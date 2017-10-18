@@ -46,7 +46,7 @@ obj=$(addprefix $(buildpath:%=%/),$(cwdir))
 else
 obj=
 endif
-hostobj:=$(buildpath:%=%/)host/$(cwdir)
+hostobj:=$(srcdir:%=%/)host/$(cwdir)
 
 CONFIGURE_STATUS:=configure.status
 ifneq ($(wildcard $(obj)$(CONFIGURE_STATUS)),)
