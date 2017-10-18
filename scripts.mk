@@ -358,17 +358,25 @@ default_action: _info _configbuild _versionbuild
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
+pc: $(obj)$(package:%=%.pc)
+
 all: default_action
 
 $(obj)$(CONFIG:%=%.h): $(configfile)
 	@$(call cmd,config)
 
 $(obj)$(VERSIONFILE:%=%.h):
-	@echo '#ifndef __VERSION_H__' >> $@
-	@echo '#define __VERSION_H__' >> $@
-	@$(if $(version), echo '#define VERSION "'$(version)'"' >> $@)
-	@$(if $(package), echo '#define PACKAGE "'$(package)'"' >> $@)
-	@echo '#endif' >> $@
+	@$(call cmd,versionfile)
+
+quiet_cmd_versionfile=VERSION $*
+define cmd_versionfile
+	echo '#ifndef __VERSION_H__' >> $@
+	echo '#define __VERSION_H__' >> $@
+	$(if $(version), echo '#define VERSION "'$(version)'"' >> $@)
+	$(if $(package), echo '#define PACKAGE "'$(package)'"' >> $@)
+	$(if $(sysconfdir), echo '#define SYSCONFDIR "'$(sysconfdir)'"' >> $@)
+	echo '#endif' >> $@
+endef
 
 ##
 # Commands for clean
@@ -412,10 +420,15 @@ quiet_cmd_ld_slib=LD $*
 quiet_cmd_ld_dlib=LD $*
  cmd_ld_dlib=$(LD) $(SYSROOT) $(LDFLAGS) $($*_LDFLAGS) -shared $(call ldgcc,-soname,$(strip $(notdir $@))) -o $@ $^ $(addprefix -L,$(RPATH)) $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 
-checkoption:=--exact-version
 quiet_cmd_check_lib=CHECK $*
-cmd_check_lib=$(CC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(CFLAGS) && \
+define cmd_check_lib
+	$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
+	echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
+	$(CC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(CFLAGS) > /dev/null 2>&1
 	$(LD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
+endef
+
+checkoption:=--exact-version
 prepare_check=$(if $(filter %-, $2),$(eval checkoption:=--atleast-version),$(if $(filter -%, $2),$(eval checkoption:=--max-version)))
 cmd_check2_lib=$(if $(findstring $(3:%-=%), $3),$(if $(findstring $(3:-%=%), $3),,$(eval checkoption:=--atleast-version),$(eval checkoption:=--max-version))) \
 	$(PKGCONFIG) --print-errors $(checkoption) $(subst -,,$3) lib$2
