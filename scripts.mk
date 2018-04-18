@@ -209,12 +209,6 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(ev
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBS+=$($(t)_LIBS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBRARY+=$($(t)_LIBRARY-y)))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(s:%.c=%)_CFLAGS+=$($(t)_CFLAGS)) ))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(s:%.cpp=%)_CFLAGS+=$($(t)_CFLAGS)) ))
-
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LDFLAGS+=$($(s:%.c=%)_LDFLAGS)) ))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LDFLAGS+=$($(s:%.cpp=%)_LDFLAGS)) ))
-
 # LIBRARY contains libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
 # Here the commands remove the informations and store the name into LIBS
@@ -227,6 +221,12 @@ $(foreach l, $(LIBS),$(eval LDFLAGS+=$(shell $(PKGCONFIG) --libs-only-L lib$(l) 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBS),$(eval $(t)_CFLAGS+=$(shell $(PKGCONFIG) --cflags lib$(l) 2> /dev/null))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBS),$(eval $(t)_LDFLAGS+=$(shell $(PKGCONFIG) --libs-only-L lib$(l) 2> /dev/null) ) ))
 
+# set the CFLAGS of each source file
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(s:%.c=%)_CFLAGS+=$($(t)_CFLAGS)) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(s:%.cpp=%)_CFLAGS+=$($(t)_CFLAGS)) ))
+
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LDFLAGS+=$($(s:%.c=%)_LDFLAGS)) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LDFLAGS+=$($(s:%.cpp=%)_LDFLAGS)) ))
 
 # The Dynamic_Loader library (libdl) allows to load external libraries.
 # If this libraries has to link to the binary functions, 
@@ -409,11 +409,11 @@ RPATH=$(wildcard $(addsuffix /.,$(wildcard $(CURDIR:%/=%)/* $(obj)*)))
 quiet_cmd_yacc_y=YACC $*
  cmd_yacc_y=$(YACC) -o $@ $<
 quiet_cmd_as_o_s=AS $*
- cmd_as_o_s=$(AS) $(SYSROOT) $(ASFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
+ cmd_as_o_s=$(AS) $(SYSROOT) $(ASFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_cc_o_c=CC $*
- cmd_cc_o_c=$(CC) $(SYSROOT) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
+ cmd_cc_o_c=$(CC) $(SYSROOT) $(CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_cc_o_cpp=CXX $*
- cmd_cc_o_cpp=$(CXX) $(SYSROOT) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
+ cmd_cc_o_cpp=$(CXX) $(SYSROOT) $(CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_moc_hpp=QTMOC $*
  cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) $($*_MOCFLAGS-y) -o $@ $<
 quiet_cmd_uic_hpp=QTUIC $*
@@ -421,9 +421,9 @@ quiet_cmd_uic_hpp=QTUIC $*
 quiet_cmd_ld_bin=LD $*
  cmd_ld_bin=$(LD) $(SYSROOT) -o $@ $^ $(LDFLAGS) $($*_LDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 quiet_cmd_hostcc_o_c=HOSTCC $*
- cmd_hostcc_o_c=$(HOSTCC) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
+ cmd_hostcc_o_c=$(HOSTCC) $(CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_hostcmd_cc_o_cpp=HOSTCXX $*
- cmd_hostcc_o_cpp=$(HOSTCXX) $(CFLAGS) $($*_CFLAGS) $($*_CFLAGS-y) -c -o $@ $<
+ cmd_hostcc_o_cpp=$(HOSTCXX) $(CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_hostld_bin=HOSTLD $*
  cmd_hostld_bin=$(HOSTLD) -o $@ $^ $(LDFLAGS) $($*_LDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 quiet_cmd_hostld_slib=HOSTLD $*
