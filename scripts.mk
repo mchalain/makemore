@@ -38,46 +38,45 @@ file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 
 VERSIONFILE=version
 
+CROSS_COMPILE?=
+
 # CONFIG could define LD CC or/and CFLAGS
 # CONFIG must be included before "Commands for build and link"
-ifneq ($(builddir),)
-buildpath=$(if $(wildcard $(addprefix /.,$(builddir))),$(builddir),$(join $(srcdir),$(builddir)))
-obj=$(addprefix $(buildpath:%=%/),$(cwdir))
-else
-obj=
-endif
-hostobj:=$(srcdir:%=%/)host/$(cwdir)
-
 CONFIGURE_STATUS:=configure.status
 ifneq ($(wildcard $(obj)$(CONFIGURE_STATUS)),)
 include $(obj)$(CONFIGURE_STATUS)
-else
-ifneq ($(wildcard $(srcdir)$(CONFIGURE_STATUS)),)
+else ifneq ($(wildcard $(srcdir)$(CONFIGURE_STATUS)),)
 include $(srcdir)$(CONFIGURE_STATUS)
-endif
 endif
 
 CONFIG?=config
 ifneq ($(wildcard $(obj)$(CONFIG)),)
 configfile:=$(obj)$(CONFIG)
-else
-ifneq ($(wildcard $(srcdir)$(CONFIG)),)
+else ifneq ($(wildcard $(srcdir)$(CONFIG)),)
 configfile:=$(srcdir)$(CONFIG)
-endif
 endif
 ifneq ($(configfile),)
 include $(configfile)
 endif
 
+#ifneq ($(findstring -arch,$(CFLAGS)),)
+#ARCH=$(shell echo $(CFLAGS) 2>&1 | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
+#buildpath=$(join $(srcdir),$(ARCH))
+#endif
+ifneq ($(builddir),)
+buildpath=$(if $(wildcard $(addprefix /.,$(builddir))),$(builddir:%/=%)/,$(join $(srcdir),$(builddir:%/=%)/))
+else ifneq ($(CROSS_COMPILE),)
+buildpath=$(join $(srcdir),$(CROSS_COMPILE:%-=%)/)
+endif
+ifneq ($(buildpath),)
+obj=$(addprefix $(buildpath),$(cwdir))
+else
+obj=
+endif
+hostobj:=$(srcdir:%=%/)host/$(cwdir)
+
 ifneq ($(file),)
 include $(file)
-endif
-
-ifeq ($(obj),)
-ifneq ($(CROSS_COMPILE),)
-buildpath=$(join $(srcdir),$(CROSS_COMPILE))
-obj=$(addprefix $(buildpath:%=%/),$(cwdir))
-endif
 endif
 
 PATH:=$(value PATH):$(hostobj)
