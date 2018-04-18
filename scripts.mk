@@ -162,24 +162,28 @@ datadir:=$(datadir:"%"=%)
 pkglibdir?=$(libdir)/$(package:"%"=%)
 pkglibdir:=$(pkglibdir:"%"=%)
 
-ifneq ($(sysroot),)
-SYSROOT+=--sysroot=$(sysroot)
+ifneq ($(sysroot:"%"=%),)
+SYSROOT:=--sysroot=$(sysroot:"%"=%)
+CFLAGS+=-isysroot $(sysroot:"%"=%) -I$(sysroot:"%"=%)$(includedir)
+LDFLAGS+=-L$(sysroot:"%"=%)$(libdir)
+LDFLAGS+=-L$(sysroot:"%"=%)$(pkglibdir)
 endif
 
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
-CFLAGS+=-I$(src) -I$(CURDIR) -I. -I$(sysroot)$(includedir)
+ifneq ($(src),)
+CFLAGS+=-I$(src)
+endif
+CFLAGS+=-I$(CURDIR) -I.
 LIBRARY+=
-ifneq ($(builddir),)
-LDFLAGS+=-L$(builddir)
+ifneq ($(obj),)
+LDFLAGS+=-L$(obj:%/=%)
 else
 LDFLAGS+=-L.
 endif
-LDFLAGS+=-L$(sysroot)$(libdir)
 LDFLAGS+=$(if $(strip $(libdir)),$(call ldgcc,-rpath,$(strip $(libdir))))
-LDFLAGS+=-L$(sysroot)$(pkglibdir)
 LDFLAGS+=$(if $(strip $(pkglibdir)),$(call ldgcc,-rpath,$(strip $(pkglibdir))))
 
-export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir
+#export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir
 
 ##
 # objects recipes generation
@@ -266,6 +270,9 @@ targets+=$(modules-target)
 targets+=$(lib-static-target)
 targets+=$(bin-target)
 
+ifneq ($(CROSS_COMPILE),)
+DESTDIR:=$(sysroot:"%"=%)
+endif
 ##
 # install recipes generation
 ##
