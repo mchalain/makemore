@@ -246,10 +246,17 @@ modules-target:=$(addprefix $(obj),$(addsuffix $(dlib-ext:%=.%),$(modules-y)))
 bin-target:=$(addprefix $(obj),$(addsuffix $(bin-ext:%=.%),$(bin-y) $(sbin-y)))
 hostslib-target:=$(addprefix $(hostobj),$(addsuffix $(slib-ext:%=.%),$(addprefix lib,$(hostslib-y))))
 hostbin-target:=$(addprefix $(hostobj),$(addsuffix $(bin-ext:%=.%),$(hostbin-y)))
+
+#create subproject
+$(foreach t,$(subdir-y),$(eval $(t)_CONFIGURE+=$($(t)_CONFIGURE-y)))
+$(foreach t,$(subdir-y),$(if $($(t)_CONFIGURE), $(eval subdir-project+=$(t))))
+subdir-y:=$(filter-out $(subdir-project),$(subdir-y))
+
 #subdir-y may contain directory's names or file's names.
 #for each directory, the script may check Makefile and *.mk files
 #list of directories
 subdir-dir:=$(wildcard $(foreach dir,$(subdir-y),$(join $(dir)/,$(notdir $(join $(dir),/.)))))
+
 #target each Makefile in directories
 subdir-target:=$(wildcard $(addsuffix /Makefile,$(subdir-dir:%/.=%)))
 #target all *.mk file in directories
@@ -259,8 +266,7 @@ subdir-files:=$(subdir-y)
 $(foreach dir, $(subdir-dir:%/.=%),$(eval subdir-files:=$(filter-out $(dir),$(subdir-files))))
 #target the files from the list
 subdir-target+=$(wildcard $(subdir-files))
-#subdir-project:=$(wildcard $(addsuffix /configure,$(subdir-y)))
-#subdir-target:=$(filter-out $(subdir-project),$(subdir-target))
+
 
 objdir:=$(sort $(dir $(target-objs)))
 
@@ -503,11 +509,11 @@ $(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(
 $(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)), $(hostobj)%.o)
 	@$(call cmd,hostld_slib)
 
-.PHONY:$(subdir-target) $(subdir-project) FORCE
-#$(subdir-project): %:
-#	$(Q)cd $(dir $*) && autoreconf -i
-#	$(Q)cd $(dir $*) && ./configure
-#	$(Q)cd $(dir $*) && $(MAKE)
+.PHONY: $(subdir-project) $(subdir-target) FORCE
+$(subdir-project): %: FORCE
+	$(Q)cd $* && $($*_CONFIGURE)
+	$(Q)$(MAKE) -C $* 
+	$(Q)$(MAKE) -C $* install
 
 $(subdir-target): %: FORCE
 	$(Q)$(MAKE) -C $(dir $*) cwdir=$(cwdir)$(dir $*) builddir=$(builddir) $(build)=$(notdir $*)
