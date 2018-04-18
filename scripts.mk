@@ -110,13 +110,24 @@ HOSTRANLIB=$(RANLIB)
 ldgcc=$(1) $(2)
 
 ifneq ($(CROSS_COMPILE),)
-	AS=$(CROSS_COMPILE:%-=%)-as
-	CC=$(CROSS_COMPILE:%-=%)-gcc
-	CXX=$(CROSS_COMPILE:%-=%)-g++
-	LD=$(CROSS_COMPILE:%-=%)-gcc
-	AR=$(CROSS_COMPILE:%-=%)-ar
-	RANLIB=$(CROSS_COMPILE:%-=%)-ranlib
-	ldgcc=-Wl,$(1),$(2)
+	ifeq ($(CC),cc)
+		CC:=gcc
+		CXX:=g++
+	endif
+	ifneq ($(findstring gcc,$(CC)),)
+		LD:=gcc
+		ldgcc=-Wl,$(1),$(2)
+	else
+		LD:=ld
+	endif
+	AS=$(TOOLCHAIN:"%"=%)$(CROSS_COMPILE:%-=%)-as
+	ifeq ($(findstring $(CROSS_COMPILE),$(CC)),)
+		CC:=$(TOOLCHAIN:"%"=%)$(CROSS_COMPILE:%-=%)-$(CC)
+		CXX:=$(TOOLCHAIN:"%"=%)$(CROSS_COMPILE:%-=%)-$(CXX)
+		LD:=$(TOOLCHAIN:"%"=%)$(CROSS_COMPILE:%-=%)-$(LD)
+	endif
+	AR=$(TOOLCHAIN:"%"=%)$(CROSS_COMPILE:%-=%)-ar
+	RANLIB=$(TOOLCHAIN:"%"=%)$(CROSS_COMPILE:%-=%)-ranlib
 else ifeq ($(CC),cc)
 # if cc is a link on gcc, prefer to use directly gcc for ld
 CCVERSION=$(shell $(CC) -v 2>&1)
