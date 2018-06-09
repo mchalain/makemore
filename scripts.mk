@@ -329,17 +329,17 @@ _clean: $(subdir-target) _clean_objs
 	$(Q)$(call cmd,clean,$(wildcard $(targets)))
 	$(Q)$(call cmd,clean,$(wildcard $(hostslib-target) $(hostbin-target)))
 
-_clean_objs:
+_clean_objs: _info 
 	$(Q)$(call cmd,clean,$(wildcard $(target-objs)) $(wildcard $(target-hostobjs)))
 
 _distclean: action:=_distclean
 _distclean: build:=$(action) -f $(srcdir)$(makemore) file
-_distclean: $(subdir-target) _clean
+_distclean: _info $(subdir-target) _clean
 	$(Q)$(call cmd,clean_dir,$(filter-out $(src),$(obj)))
 
 _check: action:=_check
 _check: build:=$(action) -s -f $(srcdir)$(makemore) file
-_check: $(subdir-target) $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))
+_check: _info $(subdir-target) $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))
 
 clean: action:=_clean
 clean: build:=$(action) -f $(srcdir)$(makemore) file
@@ -362,7 +362,7 @@ check: action:=_check
 check: build:=$(action) -s -f $(srcdir)$(makemore) file
 check: $(.DEFAULT_GOAL)
 
-default_action: _info _configbuild _versionbuild
+default_action: _configbuild _versionbuild
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
