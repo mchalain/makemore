@@ -247,17 +247,17 @@ subdir-dir:=$(foreach dir,$(subdir-y),$(filter-out %$(makefile-ext:%=.%), $(filt
 subdir-files:=$(foreach dir,$(subdir-y),$(filter %$(makefile-ext:%=.%),$(dir)) $(filter %Makefile, $(dir)))
 
 #target each Makefile in directories
-subdir-target:=$(wildcard $(addsuffix /Makefile,$(subdir-dir:%/.=%)))
-subdir-target+=$(wildcard $(subdir-files))
+subdir-target:=$(sort $(wildcard $(addsuffix /Makefile,$(subdir-dir:%/.=%))))
+subdir-target+=$(sort $(wildcard $(subdir-files)))
 
 
 objdir:=$(sort $(dir $(target-objs)))
 
 targets:=
-targets+=$(lib-dynamic-target)
-targets+=$(modules-target)
-targets+=$(lib-static-target)
-targets+=$(bin-target)
+targets+=$(sort $(lib-dynamic-target))
+targets+=$(sort $(modules-target))
+targets+=$(sort $(lib-static-target))
+targets+=$(sort $(bin-target))
 
 ifneq ($(CROSS_COMPILE),)
 DESTDIR:=$(sysroot:"%"=%)
