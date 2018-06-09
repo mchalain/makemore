@@ -242,19 +242,12 @@ $(foreach t,$(subdir-y),$(eval $(t)_CONFIGURE+=$($(t)_CONFIGURE-y)))
 $(foreach t,$(subdir-y),$(if $($(t)_CONFIGURE), $(eval subdir-project+=$(t))))
 subdir-y:=$(filter-out $(subdir-project),$(subdir-y))
 
-#subdir-y may contain directory's names or file's names.
-#for each directory, the script may check Makefile and *.mk files
-#list of directories
-subdir-dir:=$(wildcard $(foreach dir,$(subdir-y),$(join $(dir)/,$(notdir $(join $(dir),/.)))))
+#dispatch from subdir-y to directory paths and makefile paths
+subdir-dir:=$(foreach dir,$(subdir-y),$(filter-out %$(makefile-ext:%=.%), $(filter-out %Makefile, $(dir))))
+subdir-files:=$(foreach dir,$(subdir-y),$(filter %$(makefile-ext:%=.%),$(dir)) $(filter %Makefile, $(dir)))
 
 #target each Makefile in directories
 subdir-target:=$(wildcard $(addsuffix /Makefile,$(subdir-dir:%/.=%)))
-#target all *.mk file in directories
-#subdir-target+=$(wildcard $(filter-out */scripts.mk,$(addsuffix /*$(makefile-ext:%=.%),$(subdir-dir:%/.=%))))
-#remove all directories from the list
-subdir-files:=$(subdir-y)
-$(foreach dir, $(subdir-dir:%/.=%),$(eval subdir-files:=$(filter-out $(dir),$(subdir-files))))
-#target the files from the list
 subdir-target+=$(wildcard $(subdir-files))
 
 
