@@ -119,7 +119,7 @@ endif
 # if cc is a link on gcc, prefer to use directly gcc for ld
 CCVERSION=$(shell $(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(CC) -v 2>&1)
 ifneq ($(findstring GCC,$(CCVERSION)), )
-	LD=$(CROSS_COMPILE)$(CC)
+	LD=$(CC)
 	HOSTLD?=$(CC)
 	ldgcc=-Wl,$(1),$(2)
 else ifneq ($(findstring gcc,$(CC)),)
