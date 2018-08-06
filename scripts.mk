@@ -387,7 +387,7 @@ pc: $(builddir)$(package:%=%.pc)
 
 all: default_action
 
-PHONY: menuconfig gconfig xconfig config
+PHONY: menuconfig gconfig xconfig config oldconfig
 menuconfig gconfig xconfig: $(builddir)$(CONFIG)
 	$(EDITOR) $(obj)$(CONFIG)
 
@@ -397,6 +397,14 @@ menuconfig gconfig xconfig: $(builddir)$(CONFIG)
 
 config: $(builddir)$(CONFIG) $(builddir)$(VERSIONFILE:%=%.h)
 	@echo "  "CONFIG $*
+
+oldconfig: $(builddir)$(CONFIG).old
+	@$(eval CONFIGS=$(shell $(GREP) -v "^#" $(srcdir)$(DEFCONFIG) | $(AWK) -F= 't$$1 != t {print $$1}'))
+	@echo "" > $(builddir)$(CONFIG)
+	@$(foreach config,$(CONFIGS),$(if $($(config)),,$(eval $(config)=y)) $(shell echo $(config)=$($(config)) >> $(builddir)$(CONFIG)))
+
+$(builddir)$(CONFIG).old: $(builddir)$(CONFIG)
+	@cp $< $@
 
 $(builddir)$(CONFIG): $(srcdir)$(DEFCONFIG)
 	@$(eval CONFIGS=$(shell $(GREP) -v "^#" $< | $(AWK) -F= 't$$1 != t {print $$1}'))
