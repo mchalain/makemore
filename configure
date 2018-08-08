@@ -9,7 +9,7 @@ CONFIG=.config
 CONFIGURE_STATUS=.config.cache
 out=$CONFIGURE_STATUS
 
-srcdir=$(dirname $(realpath $0))/
+srcdir=$(dirname $(readlink -f $0))/
 builddir=$(pwd)/
 
 prefix=/usr/local
