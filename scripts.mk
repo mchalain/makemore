@@ -121,31 +121,32 @@ HOSTRANLIB?=$(RANLIB)
 HOSTCFLAGS?=$(CFLAGS)
 HOSTLDFLAGS?=$(LDFLAGS)
 
-ifneq ($(CROSS_COMPILE),)
- ifneq ($(findstring $(CROSS_COMPILE),$(CC)),)
-  CROSS_COMPILE:=
- else
-  CROSS_COMPILE:=$(CROSS_COMPILE:%-=%)-
- endif
- ifeq ($(CC),cc)
-  CC=gcc
- endif
-endif
-
+export PATH:=$(PATH):$(TOOLCHAIN):$(TOOLCHAIN)/bin
 # if cc is a link on gcc, prefer to use directly gcc for ld
-CCVERSION=$(shell $(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(CC) -v 2>&1)
-ifneq ($(findstring GCC,$(CCVERSION)), )
-	LD=$(CC)
-	HOSTLD?=$(CC)
-	ldgcc=-Wl,$(1),$(2)
-else ifneq ($(findstring gcc,$(CC)),)
-	LD=$(CC)
-	ldgcc=-Wl,$(1),$(2)
+ifeq ($(CC),cc)
+ TARGETCC:=gcc
 else
-	ldgcc=$(1) $(2)
+ TARGETCC:=$(CC)
+endif
+TARGETLD:=$(LD)
+TARGETAS:=$(AS)
+TARGETCXX:=$(CXX)
+TARGETAR:=$(AR)
+TARGETRANLIB:=$(RANLIB)
+
+CCVERSION:=$(shell $(TARGETCC) -v 2>&1)
+ifneq ($(CROSS_COMPILE),)
+ ifeq ($(findstring $(CROSS_COMPILE),$(TARGETCC)),)
+  TARGETCC:=$(CROSS_COMPILE:%-=%)-$(TARGETCC)
+  TARGETLD:=$(CROSS_COMPILE:%-=%)-$(LD)
+  TARGETAS:=$(CROSS_COMPILE:%-=%)-$(AS)
+  TARGETCXX:=$(CROSS_COMPILE:%-=%)-$(CXX)
+  TARGETAR:=$(CROSS_COMPILE:%-=%)-$(AR)
+  TARGETRANLIB:=$(CROSS_COMPILE:%-=%)-$(RANLIB)
+ endif
 endif
 
-ARCH?=$(shell LANG=C $(CC) -v 2>&1 | $(GREP) Target | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
+ARCH?=$(shell LANG=C $(TARGETCC) -v 2>&1 | $(GREP) Target | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
 libsuffix=$(findstring 64,$(ARCH))
 
 prefix?=/usr/local
@@ -443,30 +444,30 @@ RPATH=$(wildcard $(addsuffix /.,$(wildcard $(CURDIR:%/=%)/* $(obj)*)))
 quiet_cmd_yacc_y=YACC $*
  cmd_yacc_y=$(YACC) -o $@ $<
 quiet_cmd_as_o_s=AS $*
- cmd_as_o_s=$(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(AS) $(SYSROOT_CFLAGS) $(ASFLAGS) $($*_CFLAGS) -c -o $@ $<
+ cmd_as_o_s=$(TARGETAS) $(SYSROOT_CFLAGS) $(ASFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_cc_o_c=CC $*
- cmd_cc_o_c=$(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(CC) $(SYSROOT_CFLAGS) $(CFLAGS) $($*_CFLAGS) -c -o $@ $<
+ cmd_cc_o_c=$(TARGETCC) $(SYSROOT_CFLAGS) $(CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_cc_o_cpp=CXX $*
- cmd_cc_o_cpp=$(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(CXX) $(SYSROOT_CFLAGS) $(CXXFLAGS) $($*_CXXFLAGS) -c -o $@ $<
+ cmd_cc_o_cpp=$(TARGETCXX) $(SYSROOT_CFLAGS) $(CXXFLAGS) $($*_CXXFLAGS) -c -o $@ $<
 quiet_cmd_moc_hpp=QTMOC $*
  cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) $($*_MOCFLAGS-y) -o $@ $<
 quiet_cmd_uic_hpp=QTUIC $*
  cmd_uic_hpp=$(UIC) $< > $@
 quiet_cmd_ld_bin=LD $*
- cmd_ld_bin=$(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(LD) $(SYSROOT_LDFLAGS) -o $@ $^ $(LDFLAGS) $($*_LDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
+ cmd_ld_bin=$(TARGETCC) $(SYSROOT_LDFLAGS) $(RPATHFLAGS) -o $@ $^ $(LDFLAGS) $($*_LDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 quiet_cmd_ld_slib=LD $*
  cmd_ld_slib=$(RM) $@ && \
-	$(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(AR) -cvq $@ $^ > /dev/null && \
-	$(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(RANLIB) $@
+	$(TARGETAR) -cvq $@ $^ > /dev/null && \
+	$(TARGETRANLIB) $@
 quiet_cmd_ld_dlib=LD $*
- cmd_ld_dlib=$(TOOLCHAIN:%=%/)$(CROSS_COMPILE)$(LD) $(SYSROOT_LDFLAGS) $(LDFLAGS) $($*_LDFLAGS) -shared $(call ldgcc,-soname,$(strip $(notdir $@))) -o $@ $^ $(addprefix -L,$(RPATH)) $(LIBS:%=-l%) $($*_LIBS:%=-l%)
+ cmd_ld_dlib=$(TARGETCC) $(SYSROOT_LDFLAGS) $(LDFLAGS) $($*_LDFLAGS) -Bdynamic -shared $(call ldgcc,-soname,$(strip $(notdir $@))) -o $@ $^ $(addprefix -L,$(RPATH)) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 
 quiet_cmd_hostcc_o_c=HOSTCC $*
  cmd_hostcc_o_c=$(HOSTCC) $(HOSTCFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_hostcmd_cc_o_cpp=HOSTCXX $*
  cmd_hostcc_o_cpp=$(HOSTCXX) $(HOSTCFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_hostld_bin=HOSTLD $*
- cmd_hostld_bin=$(HOSTLD) -o $@ $^ $(HOSTLDFLAGS) $($*_LDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
+ cmd_hostld_bin=$(HOSTCC) -o $@ $^ $(HOSTLDFLAGS) $($*_LDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 quiet_cmd_hostld_slib=HOSTLD $*
  cmd_hostld_slib=$(RM) $@ && \
 	$(HOSTAR) -cvq $@ $^ > /dev/null && \
@@ -476,8 +477,8 @@ quiet_cmd_check_lib=CHECK $*
 define cmd_check_lib
 	$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
 	echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
-	$(CC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(CFLAGS) > /dev/null 2>&1
-	$(LD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
+	$(TARGETCC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(CFLAGS) > /dev/null 2>&1
+	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
 endef
 
 checkoption:=--exact-version
