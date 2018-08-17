@@ -389,21 +389,13 @@ menuconfig gconfig xconfig: $(builddir)$(CONFIG)
 	@echo "  "DEFCONFIG $*
 	@$(GREP) -v "^#" $(wildcard $(srcdir)/configs/$< $(srcdir)/$<) > $(obj)$(CONFIG)
 
-config: $(builddir)$(CONFIG) $(builddir)$(VERSIONFILE:%=%.h)
-	@echo "  "CONFIG $*
-
 oldconfig: $(builddir)$(CONFIG).old
-	@$(eval CONFIGS=$(shell $(GREP) -v "^#" $(srcdir)$(DEFCONFIG) | $(AWK) -F= 't$$1 != t {print $$1}'))
-	@echo "" > $(builddir)$(CONFIG)
-	@$(foreach config,$(CONFIGS),$(if $($(config)),,$(eval $(config)=y)) $(shell echo $(config)=$($(config)) >> $(builddir)$(CONFIG)))
+	@$(eval CONFIGS=$(shell $(GREP) -v "^#" $(DEFCONFIG) | $(AWK) -F= 't$$1 != t {print $$1}'))
+	@$(foreach config,$(CONFIGS),$(if $($(config)),,$(eval $(config)=n)))
+	$(foreach config,$(CONFIGS),$(shell printf "$(config)=$($(config))\n" >> $(builddir)$(CONFIG)))
 
-$(builddir)$(CONFIG).old: $(builddir)$(CONFIG)
-	@cp $< $@
-
-$(builddir)$(CONFIG): $(srcdir)$(DEFCONFIG)
-	@$(eval CONFIGS=$(shell $(GREP) -v "^#" $< | $(AWK) -F= 't$$1 != t {print $$1}'))
-	@echo "" > $@
-	@$(foreach config,$(CONFIGS),$(shell echo $(config)=$($(config)) >> $@))
+$(builddir)$(CONFIG).old: $(wildcard $(builddir)$(CONFIG))
+	@$(if $<,mv $< $@)
 
 $(builddir)$(CONFIG:.%=%.h): $(builddir)$(CONFIG)
 	@echo "  "CONFIG $*
