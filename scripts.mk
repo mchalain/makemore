@@ -37,12 +37,6 @@ hostbin-y:=
 srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 
-VERSIONFILE=version
-DEFCONFIG=defconfig
-ifneq ($(wildcard $(srcdir)$(DEFCONFIG)),)
-include $(srcdir)$(DEFCONFIG)
-endif
-
 #ifneq ($(findstring -arch,$(CFLAGS)),)
 #ARCH=$(shell echo $(CFLAGS) 2>&1 | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
 #buildpath=$(join $(srcdir),$(ARCH))
@@ -56,14 +50,23 @@ endif
 
 # CONFIG could define LD CC or/and CFLAGS
 # CONFIG must be included before "Commands for build and link"
-CONFIGURE_STATUS:=.config.cache
-ifneq ($(wildcard $(builddir)$(CONFIGURE_STATUS)),)
-include $(builddir)$(CONFIGURE_STATUS)
+VERSIONFILE=version
+DEFCONFIG?=$(srcdir)defconfig
+ifneq ($(wildcard $(DEFCONFIG)),)
+include $(DEFCONFIG)
 endif
+
 
 CONFIG?=.config
 ifneq ($(wildcard $(builddir)$(CONFIG)),)
 include $(builddir)$(CONFIG)
+$(eval NOCONFIGS:=$(shell awk '/^# .* is not set/{print $$2}' $(builddir)$(CONFIG)))
+$(foreach config,$(NOCONFIGS),$(eval $(config)=n) )
+endif
+
+CONFIGURE_STATUS:=.config.cache
+ifneq ($(wildcard $(builddir)$(CONFIGURE_STATUS)),)
+include $(builddir)$(CONFIGURE_STATUS)
 endif
 
 ifneq ($(file),)
