@@ -173,27 +173,30 @@ ifneq ($(SYSROOT),)
 sysroot:=$(patsubst "%",%,$(SYSROOT:%/=%)/)
 SYSROOT_CFLAGS+=--sysroot=$(sysroot)
 SYSROOT_CFLAGS+=-isysroot $(sysroot)
+SYSROOT_CFLAGS+=-I$(sysroot)$(includedir)
 SYSROOT_LDFLAGS+=--sysroot=$(sysroot)
+SYSROOT_LDFLAGS+=-L$(sysroot)$(libdir)
+SYSROOT_LDFLAGS+=-L$(sysroot)$(pkglibdir)
 else
 sysroot:=
 endif
 
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
+LIBRARY+=
+LDFLAGS+=
+RPATHFLAGS+=$(if $(strip $(libdir)),$(call ldgcc,-rpath,$(strip $(libdir))))
+ifneq ($(strip $(pkglibdir)),$(strip $(libdir)))
+RPATHFLAGS+=$(if $(strip $(pkglibdir)),$(call ldgcc,-rpath,$(strip $(pkglibdir))))
+endif
+ifneq ($(obj),)
 CFLAGS+=-I$(obj)
 CXXFLAGS+=-I$(obj)
+LDFLAGS+=-L$(obj)
+endif
 ifneq ($(src),)
 CFLAGS+=-I$(src)
 CXXFLAGS+=-I$(src)
 endif
-LIBRARY+=
-LDFLAGS+=-L$(obj:%/=%)
-LDFLAGS+=$(if $(strip $(libdir)),$(call ldgcc,-rpath,$(strip $(libdir))))
-LDFLAGS+=$(if $(strip $(pkglibdir)),$(call ldgcc,-rpath,$(strip $(pkglibdir))))
-
-CFLAGS+=-I$(sysroot)$(includedir)
-LDFLAGS+=-L$(sysroot)$(libdir)
-LDFLAGS+=-L$(sysroot)$(pkglibdir)
-
 
 export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir builddir sysconfdir
 
@@ -281,7 +284,7 @@ targets+=$(lib-static-target)
 targets+=$(bin-target)
 
 ifneq ($(CROSS_COMPILE),)
-DESTDIR:=$(sysroot:"%"=%)
+DESTDIR?=$(sysroot:"%"=%)
 endif
 ##
 # install recipes generation
