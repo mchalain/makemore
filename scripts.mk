@@ -177,11 +177,13 @@ pkglibdir:=$(pkglibdir:"%"=%)
 
 ifneq ($(SYSROOT),)
 sysroot:=$(patsubst "%",%,$(SYSROOT:%/=%)/)
+TARGETPATHPREFIX=$(sysroot)
 SYSROOT_CFLAGS+=--sysroot=$(sysroot)
 SYSROOT_CFLAGS+=-isysroot $(sysroot)
 SYSROOT_LDFLAGS+=--sysroot=$(sysroot)
 else
 sysroot:=
+TARGETPATHPREFIX= =
 endif
 
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
@@ -189,15 +191,15 @@ LIBRARY+=
 LDFLAGS+=
 
 ifneq ($(strip $(includedir)),)
-SYSROOT_CFLAGS+=-I$(sysroot)$(strip $(includedir))
+SYSROOT_CFLAGS+=-I$(TARGETPATHPREFIX)$(strip $(includedir))
 endif
 ifneq ($(strip $(libdir)),)
 RPATHFLAGS+=-Wl,-rpath,$(strip $(libdir))
-SYSROOT_LDFLAGS+=-L$(sysroot)$(strip $(libdir))
+SYSROOT_LDFLAGS+=-L$(TARGETPATHPREFIX)$(strip $(libdir))
 endif
 ifneq ($(strip $(pkglibdir)),)
 RPATHFLAGS+=-Wl,-rpath,$(strip $(pkglibdir))
-SYSROOT_LDFLAGS+=-L$(sysroot)$(strip $(pkglibdir))
+SYSROOT_LDFLAGS+=-L$(TARGETPATHPREFIX)$(strip $(pkglibdir))
 endif
 
 ifneq ($(obj),)
