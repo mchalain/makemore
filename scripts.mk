@@ -51,7 +51,7 @@ endif
 
 # CONFIG could define LD CC or/and CFLAGS
 # CONFIG must be included before "Commands for build and link"
-VERSIONFILE=version
+VERSIONFILE?=version
 DEFCONFIG?=$(srcdir)defconfig
 ifneq ($(wildcard $(DEFCONFIG)),)
 include $(DEFCONFIG)
@@ -210,6 +210,10 @@ endif
 ifneq ($(src),)
 CFLAGS+=-I$(src)
 CXXFLAGS+=-I$(src)
+endif
+CFLAGS+=-include $(builddir)$(VERSIONFILE:%=%.h)
+ifneq ($(wildcard $(builddir)$(CONFIG:.%=%.h)),)
+CFLAGS+=-include $(builddir)$(CONFIG:.%=%.h)
 endif
 
 export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir builddir sysconfdir
