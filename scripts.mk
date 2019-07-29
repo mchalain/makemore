@@ -140,13 +140,15 @@ TARGETRANLIB:=$(RANLIB)
 
 CCVERSION:=$(shell $(TARGETCC) -v 2>&1)
 ifneq ($(dirname $(TARGETCC)),)
-TARGETPREFIX=
-elifneq ($(CROSS_COMPILE),)
-ifeq ($(findstring $(CROSS_COMPILE),$(TARGETCC)),)
-TARGETPREFIX=$(CROSS_COMPILE:%-=%)-
-endif
+	TARGETPREFIX=
 else
-TARGETPREFIX=
+	ifneq ($(CROSS_COMPILE),)
+		ifeq ($(findstring $(CROSS_COMPILE),$(TARGETCC)),)
+			TARGETPREFIX=$(CROSS_COMPILE:%-=%)-
+		endif
+	else
+		TARGETPREFIX=
+	endif
 endif
 TARGETCC:=$(TARGETPREFIX)$(TARGETCC)
 TARGETLD:=$(TARGETPREFIX)$(LD)
