@@ -424,7 +424,7 @@ menuconfig gconfig xconfig: $(builddir)$(CONFIG)
 	$(eval DEFCONFIG:=$(wildcard $(srcdir)/configs/$@ $(srcdir)/$@))
 	@$(if $(DEFCONFIG),$(GREP) -v "^#" $(DEFCONFIG) > $(obj)$(CONFIG))
 
-oldconfig: $(builddir)$(CONFIG).old
+oldconfig: $(DEFCONFIG) $(builddir)$(CONFIG).old
 	@$(eval CONFIGS=$(shell $(GREP) -v "^#" $(DEFCONFIG) | $(AWK) -F= 't$$1 != t {print $$1}'))
 	@$(foreach config,$(CONFIGS),$(if $($(config)),,$(eval $(config)=n)))
 	$(foreach config,$(CONFIGS),$(shell printf "$(config)=$($(config))\n" >> $(builddir)$(CONFIG)))
