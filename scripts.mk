@@ -55,14 +55,14 @@ VERSIONFILE=version
 DEFCONFIG?=$(srcdir)defconfig
 ifneq ($(wildcard $(DEFCONFIG)),)
 include $(DEFCONFIG)
-CONFIGFILE+=$(DEFCONFIG)
+CONFIGFILE=$(DEFCONFIG)
 endif
 
 
 CONFIG?=.config
 ifneq ($(wildcard $(builddir)$(CONFIG)),)
 include $(builddir)$(CONFIG)
-CONFIGFILE+=$(buidldir)$(CONFIG)
+CONFIGFILE=$(buidldir)$(CONFIG)
 $(eval NOCONFIGS:=$(shell awk '/^# .* is not set/{print $$2}' $(builddir)$(CONFIG)))
 $(foreach config,$(NOCONFIGS),$(eval $(config)=n) )
 endif
@@ -70,7 +70,7 @@ endif
 CONFIGURE_STATUS:=.config.cache
 ifneq ($(wildcard $(builddir)$(CONFIGURE_STATUS)),)
 include $(builddir)$(CONFIGURE_STATUS)
-CONFIGFILE+=$(buidldir)$(CONFIGURE_STATUS)
+CONFIGFILE=$(buidldir)$(CONFIGURE_STATUS)
 endif
 
 ifneq ($(file),)
@@ -160,16 +160,20 @@ TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
 ARCH?=$(shell LANG=C $(TARGETCC) -v 2>&1 | $(GREP) Target | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
 libsuffix=$(findstring 64,$(ARCH))
 
+ifneq ($(PREFIX),)
+prefix:=$(PREFIX)
+endif
 prefix?=/usr/local
 prefix:=$(prefix:"%"=%)
+exec_prefix?=$(prefix)
 program_prefix?=
 library_prefix?=lib
-bindir?=$(prefix)/bin
+bindir?=$(exec_prefix)/bin
 bindir:=$(bindir:"%"=%)
-sbindir?=$(prefix)/sbin
+sbindir?=$(exec_prefix)/sbin
 sbindir:=$(sbindir:"%"=%)
-libdir?=$(word 1,$(wildcard $(prefix)/lib$(libsuffix) $(prefix)/lib))
-libdir:=$(if $(libdir), $(libdir),$(prefix)/lib)
+libdir?=$(word 1,$(wildcard $(exec_prefix)/lib$(libsuffix) $(exec_prefix)/lib))
+libdir:=$(if $(libdir), $(libdir),$(exec_prefix)/lib)
 libdir:=$(libdir:"%"=%)
 sysconfdir?=$(prefix)/etc
 sysconfdir:=$(sysconfdir:"%"=%)
@@ -355,7 +359,7 @@ _info:
 	@:
 
 _hostbuild: $(if $(strip $(hostslib-y) $(hostbin-y)), $(hostobj) $(hostslib-target) $(hostbin-target))
-_configbuild: $(obj) $(if $(wildcard $(builddir)$(CONFIG)),$(join $(builddir),$(CONFIG:.%=%.h)))
+_configbuild: $(obj) $(if $(wildcard $(CONFIGFILE)),$(join $(builddir),config.h))
 _versionbuild: $(if $(package) $(version), $(join $(builddir),$(VERSIONFILE:%=%.h)))
 
 _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) _hostbuild $(targets)
@@ -395,9 +399,9 @@ distclean:
 	$(Q)$(call cmd,clean_dir,$(wildcard $(buildpath:%=%/)host))
 	$(Q)$(call cmd,clean_dir,$(wildcard $(gitclone-target)))
 	$(Q)$(call cmd,clean,$(wildcard $(download-target)))
-	$(Q)$(call cmd,clean,$(wildcard $(obj)$(CONFIG)))
-	$(Q)$(call cmd,clean,$(wildcard $(join $(obj),$(CONFIG:.%=%.h))))
-	$(Q)$(call cmd,clean,$(wildcard $(join $(obj),$(VERSIONFILE:%=%.h))))
+	$(Q)$(call cmd,clean,$(wildcard $(builddir)$(CONFIG)))
+	$(Q)$(call cmd,clean,$(wildcard $(join $(builddir),$(CONFIG:.%=%.h))))
+	$(Q)$(call cmd,clean,$(wildcard $(join $(builddir),$(VERSIONFILE:%=%.h))))
 
 install: action:=_install
 install: build:=$(action) -f $(srcdir)$(makemore) file
@@ -432,19 +436,32 @@ oldconfig: $(DEFCONFIG) $(builddir)$(CONFIG).old
 $(builddir)$(CONFIG).old: $(wildcard $(builddir)$(CONFIG))
 	@$(if $<,mv $< $@)
 
-$(builddir)$(CONFIG:.%=%.h): $(builddir)$(CONFIG)
+$(builddir)config.h: $(CONFIGFILE)
 	@echo "  "CONFIG $*
-	@$(GREP) -v "^#" $< | $(AWK) -F= 't$$1 != t {print "#define "$$1" "$$2}' > $@
+	@echo '#ifndef __CONFIG_H__' > $@
+	@echo '#define __CONFIG_H__' >> $@
+	@echo '' >> $@
+	@echo '#include "version.h"' >> $@
+	@echo '' >> $@
+	@$(GREP) -v "^#" $< | $(AWK) -F= 't$$1 != t {if ($$2 != "n") print "#define "$$1" "$$2}' >> $@
+	@echo '' >> $@
+	@$(if $(pkglibdir), echo '#define PKGLIBDIR "'$(pkglibdir)'"' >> $@)
+	@$(if $(datadir), echo '#define DATADIR "'$(datadir)'"' >> $@)
+	@$(if $(datadir), echo '#define PKG_DATADIR "'$(datadir)'"' >> $@)
+	@$(if $(sysconfdir), echo '#define SYSCONFDIR "'$(sysconfdir)'"' >> $@)
+	@echo '#endif' >> $@
 
 $(builddir)$(VERSIONFILE:%=%.h):
 	@echo "  "VERSION $*
 	@echo '#ifndef __VERSION_H__' > $@
 	@echo '#define __VERSION_H__' >> $@
+	@echo '' >> $@
 	@$(if $(version), echo '#define VERSION "'$(version)'"' >> $@)
 	@$(if $(package), echo '#define PACKAGE "'$(package)'"' >> $@)
-	@$(if $(pkglibdir), echo '#define PKGLIBDIR "'$(pkglibdir)'"' >> $@)
-	@$(if $(datadir), echo '#define DATADIR "'$(datadir)'"' >> $@)
-	@$(if $(sysconfdir), echo '#define SYSCONFDIR "'$(sysconfdir)'"' >> $@)
+	@$(if $(version), echo '#define PACKAGE_VERSION "'$(version)'"' >> $@)
+	@$(if $(package), echo '#define PACKAGE_NAME "'$(package)'"' >> $@)
+	@$(if $(package), echo '#define PACKAGE_TARNAME "'$(subst " ","_",$(package))'"' >> $@)
+	@$(if $(package), echo '#define PACKAGE_STRING "'$(package) $(version)'"' >> $@)
 	@echo '#endif' >> $@
 
 ##
