@@ -420,12 +420,12 @@ all: default_action
 
 PHONY: menuconfig gconfig xconfig config oldconfig
 menuconfig gconfig xconfig: $(builddir)$(CONFIG)
-	$(EDITOR) $(obj)$(CONFIG)
+	$(EDITOR) $(builddir)$(CONFIG)
 
-%_defconfig:
+%_defconfig: FORCE
 	@echo "  "DEFCONFIG $*
-	$(eval DEFCONFIG:=$(wildcard $(srcdir)/configs/$@ $(srcdir)/$@))
-	@$(if $(DEFCONFIG),$(GREP) -v "^#" $(DEFCONFIG) > $(obj)$(CONFIG))
+	$(eval DEFCONFIG:=$(firstword $(wildcard $@ $(srcdir)/configs/$@ $(srcdir)/$@)))
+	@$(if $(DEFCONFIG),$(GREP) -v "^#" $(DEFCONFIG) > $(builddir)$(CONFIG))
 
 oldconfig: $(DEFCONFIG) $(builddir)$(CONFIG).old
 	@$(eval CONFIGS=$(shell $(GREP) -v "^#" $(DEFCONFIG) | $(AWK) -F= 't$$1 != t {print $$1}'))
