@@ -139,7 +139,7 @@ TARGETAR:=$(AR)
 TARGETRANLIB:=$(RANLIB)
 
 CCVERSION:=$(shell $(TARGETCC) -v 2>&1)
-ifneq ($(dirname $(TARGETCC)),)
+ifneq ($(dir $(TARGETCC)),./)
 	TARGETPREFIX=
 else
 	ifneq ($(CROSS_COMPILE),)
@@ -317,7 +317,6 @@ targets+=$(lib-dynamic-target)
 targets+=$(modules-target)
 targets+=$(lib-static-target)
 targets+=$(bin-target)
-targets+=$(data-y)
 
 ifneq ($(CROSS_COMPILE),)
 DESTDIR?=$(sysroot:"%"=%)
@@ -362,7 +361,7 @@ _hostbuild: $(if $(strip $(hostslib-y) $(hostbin-y)), $(hostobj) $(hostslib-targ
 _configbuild: $(obj) $(if $(wildcard $(CONFIGFILE)),$(join $(builddir),config.h))
 _versionbuild: $(if $(package) $(version), $(join $(builddir),$(VERSIONFILE:%=%.h)))
 
-_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) _hostbuild $(targets)
+_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) _hostbuild $(data-y) $(targets)
 	@:
 
 _install: action:=_install
