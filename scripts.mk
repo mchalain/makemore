@@ -216,18 +216,22 @@ SYSROOT_LDFLAGS+=-L$(DESTDIR)$(strip $(pkglibdir))
 endif
 endif
 
+INTERN_CFLAGS+=-I.
+INTERN_CXXFLAGS+=-I.
+INTERN_LDFLAGS+=-L.
 ifneq ($(obj),)
-CFLAGS+=-I$(obj)
-CXXFLAGS+=-I$(obj)
-LDFLAGS+=-L$(obj)
+INTERN_LDFLAGS+=-L$(obj)
+endif
+ifneq ($(hostobj),)
+INTERN_LDFLAGS+=-L$(hostobj)
 endif
 ifneq ($(src),)
-CFLAGS+=-I$(src)
-CXXFLAGS+=-I$(src)
+INTERN_CFLAGS+=-I$(src)
+INTERN_CXXFLAGS+=-I$(src)
 endif
-CFLAGS+=-include $(builddir)$(VERSIONFILE:%=%.h)
-ifneq ($(wildcard $(builddir)$(CONFIG:.%=%.h)),)
-CFLAGS+=-include $(builddir)$(CONFIG:.%=%.h)
+INTERN_CFLAGS+=-include $(builddir)$(VERSIONFILE:%=%.h)
+ifneq ($(wildcard $(builddir)config.h),)
+INTERN_CFLAGS+=-include $(builddir)config.h
 endif
 
 export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir builddir sysconfdir
@@ -252,9 +256,13 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LIBRARY+=$($(s:%.cpp=%)_LIBRARY)) ))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS+=$($(t)_CFLAGS-y)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CXXFLAGS+=$($(t)_CXXFLAGS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LDFLAGS+=$($(t)_LDFLAGS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBS+=$($(t)_LIBS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBRARY+=$($(t)_LIBRARY-y)))
+
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS+=$(INTERN_CFLAGS)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LDFLAGS+=$(INTERN_LDFLAGS)))
 
 # LIBRARY contains libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
@@ -523,8 +531,8 @@ quiet_cmd_check_lib=CHECK $*
 define cmd_check_lib
 	$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
 	echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
-	$(TARGETCC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(CFLAGS) > /dev/null 2>&1
-	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
+	$(TARGETCC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(INTERN_CFLAGS) $(CFLAGS) > /dev/null 2>&1
+	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(INTERN_LDFLAGS) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
 endef
 
 checkoption:=--exact-version
