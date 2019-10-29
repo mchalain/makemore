@@ -176,6 +176,7 @@ includedir?=$(prefix)/include
 includedir:=$(includedir:"%"=%)
 datadir?=$(prefix)/share/$(package:"%"=%)
 datadir:=$(datadir:"%"=%)
+pkgdatadir?=$(datadir:"%"=%)
 pkglibdir?=$(libdir)/$(package:"%"=%)
 pkglibdir:=$(pkglibdir:"%"=%)
 
@@ -418,38 +419,51 @@ pc: $(builddir)$(package:%=%.pc)
 all: default_action
 
 PHONY: menuconfig gconfig xconfig config oldconfig
-menuconfig gconfig xconfig: $(builddir)$(CONFIG)
+menuconfig gconfig xconfig config:
 	$(EDITOR) $(builddir)$(CONFIG)
 
-%_defconfig: FORCE
+
+defconfig: $(builddir)$(CONFIG).old cleanconfig FORCE
 	@echo "  "DEFCONFIG $*
+	@$(if $(DEFCONFIG),$(GREP) -v "^#" $(DEFCONFIG) > $(builddir)$(CONFIG))
+
+%_defconfig: $(builddir)$(CONFIG).old cleanconfig FORCE
+	@echo "  "DEFCONFIG $*
+	$(if $(firstword $(wildcard $@ $(srcdir)/configs/$@ $(srcdir)/$@)),,$(error $*_defconfig not found))
 	$(eval DEFCONFIG:=$(firstword $(wildcard $@ $(srcdir)/configs/$@ $(srcdir)/$@)))
 	@$(if $(DEFCONFIG),$(GREP) -v "^#" $(DEFCONFIG) > $(builddir)$(CONFIG))
 
-oldconfig: $(DEFCONFIG) $(builddir)$(CONFIG).old
-	@$(eval CONFIGS=$(shell $(GREP) -v "^#" $(DEFCONFIG) | $(AWK) -F= 't$$1 != t {print $$1}'))
-	@$(foreach config,$(CONFIGS),$(if $($(config)),,$(eval $(config)=n)))
-	$(foreach config,$(CONFIGS),$(shell printf "$(config)=$($(config))\n" >> $(builddir)$(CONFIG)))
+CONFIGS:=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}' )
+oldconfig: $(DEFCONFIG) FORCE
+	@$(eval CONFIGS=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config))))
+	@$(if $(CONFIGS),cat $(DEFCONFIG) | grep $(addprefix -e ,$(CONFIGS)), echo "") >> $(builddir)$(CONFIG)
+
+cleanconfig: $(if $(wildcard $(builddir)$(CONFIG)),distclean)
 
 $(builddir)$(CONFIG).old: $(wildcard $(builddir)$(CONFIG))
 	@$(if $<,mv $< $@)
 
-$(builddir)config.h: $(CONFIGFILE)
+$(builddir)$(CONFIG):
+	$(warning "Configure the project first")
+	$(warning "  make <...>_defconfig")
+	$(warning "  make defconfig")
+	$(warning "  make config")
+	$(error  )
+
+$(builddir)config.h: $(CONFIGFILE) $(builddir)$(CONFIG)
 	@echo "  "CONFIG $*
 	@echo '#ifndef __CONFIG_H__' > $@
 	@echo '#define __CONFIG_H__' >> $@
 	@echo '' >> $@
-	@echo '#include "version.h"' >> $@
+	@$(GREP) -v "^#" $< | $(AWK) -F= 't$$1 != t {if ($$2 != "n") print "#define "toupper($$1)" "$$2}' >> $@
 	@echo '' >> $@
-	@$(GREP) -v "^#" $< | $(AWK) -F= 't$$1 != t {if ($$2 != "n") print "#define "$$1" "$$2}' >> $@
-	@echo '' >> $@
-	@$(if $(pkglibdir), echo '#define PKGLIBDIR "'$(pkglibdir)'"' >> $@)
-	@$(if $(datadir), echo '#define DATADIR "'$(datadir)'"' >> $@)
-	@$(if $(datadir), echo '#define PKG_DATADIR "'$(datadir)'"' >> $@)
-	@$(if $(sysconfdir), echo '#define SYSCONFDIR "'$(sysconfdir)'"' >> $@)
+	@$(if $(pkglibdir), sed -i -e "/\\<PKGLIBDIR\\>/d" $@; echo '#define PKGLIBDIR "'$(pkglibdir)'"' >> $@)
+	@$(if $(datadir), sed -i -e "/\\<DATADIR\\>/d" $@; echo '#define DATADIR "'$(datadir)'"' >> $@)
+	@$(if $(pkgdatadir), sed -i -e "/\\<PKG_DATADIR\\>/d" $@; echo '#define PKG_DATADIR "'$(pkgdatadir)'"' >> $@)
+	@$(if $(sysconfdir), sed -i -e "/\\<SYSCONFDIR\\>/d" $@; echo '#define SYSCONFDIR "'$(sysconfdir)'"' >> $@)
 	@echo '#endif' >> $@
 
-$(builddir)$(VERSIONFILE:%=%.h):
+$(builddir)$(VERSIONFILE:%=%.h): $(builddir)$(CONFIG)
 	@echo "  "VERSION $*
 	@echo '#ifndef __VERSION_H__' > $@
 	@echo '#define __VERSION_H__' >> $@
