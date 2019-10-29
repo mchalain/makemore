@@ -320,6 +320,8 @@ $(foreach dl,$(download-y),$(if $(findstring git,$($(dl)_SITE_METHOD)),$(eval gi
 
 objdir:=$(sort $(dir $(target-objs)))
 
+hostobjdir:=$(sort $(dir $(target-hostobjs)))
+
 targets:=
 targets+=$(lib-dynamic-target)
 targets+=$(modules-target)
@@ -359,17 +361,21 @@ install+=$(sbin-install)
 action:=_build
 build:=$(action) -f $(srcdir)$(makemore) file
 .DEFAULT_GOAL:=_entry
-.PHONY:_entry _build _install _clean _distclean _check
-_entry: default_action
+.PHONY:_entry _build _install _clean _distclean _check _hostbuild
+_entry: _configbuild _versionbuild default_action
 
 _info:
 	@:
 
-_hostbuild: $(if $(strip $(hostslib-y) $(hostbin-y)), $(hostobj) $(hostslib-target) $(hostbin-target))
+_hostbuild: action:=_hostbuild
+_hostbuild: build:=$(action) -f $(srcdir)$(makemore) file
+_hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target)
+	@:
+
 _configbuild: $(obj) $(if $(wildcard $(CONFIGFILE)),$(join $(builddir),config.h))
 _versionbuild: $(if $(package) $(version), $(join $(builddir),$(VERSIONFILE:%=%.h)))
 
-_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) _hostbuild $(data-y) $(targets)
+_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets)
 	@:
 
 _install: action:=_install
@@ -395,13 +401,14 @@ _check: action:=_check
 _check: build:=$(action) -s -f $(srcdir)$(makemore) file
 _check: $(subdir-target) $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))
 
+PHONY:clean distclean install check default_action pc all
 clean: action:=_clean
 clean: build:=$(action) -f $(srcdir)$(makemore) file
-clean: $(.DEFAULT_GOAL)
+clean: default_action
 
 distclean: action:=_distclean
 distclean: build:=$(action) -f $(srcdir)$(makemore) file
-distclean: $(.DEFAULT_GOAL)
+distclean: default_action
 distclean:
 	$(Q)$(call cmd,clean_dir,$(wildcard $(buildpath:%=%/)host))
 	$(Q)$(call cmd,clean_dir,$(wildcard $(gitclone-target)))
@@ -412,13 +419,17 @@ distclean:
 
 install: action:=_install
 install: build:=$(action) -f $(srcdir)$(makemore) file
-install: $(.DEFAULT_GOAL)
+install: _configbuild _versionbuild default_action
 
 check: action:=_check
 check: build:=$(action) -s -f $(srcdir)$(makemore) file
 check: $(.DEFAULT_GOAL)
 
-default_action: _info _configbuild _versionbuild
+hosttools: action:=_hostbuild
+hosttools: build:=$(action) -f $(srcdir)$(makemore) file
+hosttools: default_action
+
+default_action: _info
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
@@ -517,9 +528,9 @@ quiet_cmd_ld_dlib=LD $*
  cmd_ld_dlib=$(TARGETCC) $($*_LDFLAGS) $(LDFLAGS) $(SYSROOT_LDFLAGS) -Bdynamic -shared -Wl,-soname,$(strip $(notdir $@)) -o $@ $^ $(addprefix -L,$(RPATH)) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 
 quiet_cmd_hostcc_o_c=HOSTCC $*
- cmd_hostcc_o_c=$(HOSTCC) $($*_CFLAGS) $(HOSTCFLAGS) -c -o $@ $<
+ cmd_hostcc_o_c=$(HOSTCC) $(HOSTCFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_hostcmd_cc_o_cpp=HOSTCXX $*
- cmd_hostcc_o_cpp=$(HOSTCXX) $($*_CFLAGS) $(HOSTCFLAGS) -c -o $@ $<
+ cmd_hostcc_o_cpp=$(HOSTCXX) $(HOSTCXXFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_hostld_bin=HOSTLD $*
  cmd_hostld_bin=$(HOSTCC) -o $@ $^ $($*_LDFLAGS) $(HOSTLDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 quiet_cmd_hostld_slib=HOSTLD $*
@@ -544,7 +555,7 @@ cmd_check2_lib=$(if $(findstring $(3:%-=%), $3),$(if $(findstring $(3:-%=%), $3)
 # build rules
 ##
 .SECONDEXPANSION:
-$(hostobj) $(objdir) $(buildpath):
+$(hostobjdir) $(objdir) $(buildpath):
 	$(Q)mkdir -p $@
 
 $(obj)%.tab.c:%.y
