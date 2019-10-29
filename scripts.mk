@@ -53,11 +53,6 @@ endif
 # CONFIG must be included before "Commands for build and link"
 VERSIONFILE?=version
 DEFCONFIG?=$(srcdir)defconfig
-ifneq ($(wildcard $(DEFCONFIG)),)
-include $(DEFCONFIG)
-CONFIGFILE=$(DEFCONFIG)
-endif
-
 
 CONFIG?=.config
 ifneq ($(wildcard $(builddir)$(CONFIG)),)
