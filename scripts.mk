@@ -690,7 +690,7 @@ endef
 
 quiet_cmd_gitclone=CLONE $*
 define cmd_gitclone
-	git clone $(URL) $(VERSION) $(OUTPUT)
+	$(if $(wildcard $(OUTPUT)),,git clone --depth 1 $(URL) $(VERSION) $(OUTPUT))
 endef
 
 $(DL)/:
@@ -701,12 +701,12 @@ $(download-target): %: $(DL)/
 	$(eval DL=$(realpath $(DL)))
 	$(eval OUTPUT=$(DL)/$($*_SOURCE))
 	@$(call cmd,download)
-	@$(if $(findstring .zip, $($*_SOURCE)),unzip -o -d $(srcdir)/$* $(OUTPUT))
-	@$(if $(findstring .tar.gz, $($*_SOURCE)),tar -xzf $(OUTPUT) -C $(srcdir)/$*)
+	@$(if $(findstring .zip, $($*_SOURCE)),unzip -o -d $(cwdir)/$* $(OUTPUT))
+	@$(if $(findstring .tar.gz, $($*_SOURCE)),tar -xzf $(OUTPUT) -C $(cwdir)/$*)
 
 $(gitclone-target): %:
-	$(eval URL=$($*_SITE)/$($*_SOURCE))
-	$(eval OUTPUT=$(srcdir)/$*)
+	$(eval URL=$($*_SITE))
+	$(eval OUTPUT=$(cwdir)/$*)
 	$(eval VERSION=$(if $($*_VERSION),-b $($*_VERSION)))
 	@$(call cmd,gitclone)
 
