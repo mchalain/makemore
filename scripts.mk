@@ -1,4 +1,4 @@
-makemore:=$(notdir $(lastword $(MAKEFILE_LIST)))
+makemore:=$(lastword $(MAKEFILE_LIST))
 MAKEFLAGS+=--no-print-directory
 ifeq ($(inside_makemore),)
 inside_makemore:=yes
