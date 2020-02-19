@@ -114,6 +114,7 @@ LD?=gcc
 LDFLAGS?=
 AR?=ar
 RANLIB?=ranlib
+GCOV?=gcov
 HOSTCC?=$(CC)
 HOSTCXX?=$(CXX)
 HOSTLD?=$(LD)
@@ -134,6 +135,7 @@ TARGETAS:=$(AS)
 TARGETCXX:=$(CXX)
 TARGETAR:=$(AR)
 TARGETRANLIB:=$(RANLIB)
+TARGETGCOV:=$(GCOV)
 
 CCVERSION:=$(shell $(TARGETCC) -v 2>&1)
 ifneq ($(dir $(TARGETCC)),./)
@@ -153,6 +155,7 @@ TARGETAS:=$(TARGETPREFIX)$(AS)
 TARGETCXX:=$(TARGETPREFIX)$(CXX)
 TARGETAR:=$(TARGETPREFIX)$(AR)
 TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
+TARGETGCOV:=$(TARGETPREFIX)$(GCOV)
 
 ARCH?=$(shell LANG=C $(TARGETCC) -v 2>&1 | $(GREP) Target | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
 libsuffix=$(findstring 64,$(ARCH))
@@ -196,6 +199,10 @@ endif
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
 LIBRARY+=
 LDFLAGS+=
+
+GCOV_CFLAGS:=--coverage -fprofile-arcs -ftest-coverage
+GCOV_LDFLAGS:=--coverage -fprofile-arcs -ftest-coverage
+GCOV_LIBS:=gcov
 
 ifneq ($(strip $(includedir)),)
 SYSROOT_CFLAGS+=-I$(TARGETPATHPREFIX)$(strip $(includedir))
@@ -265,6 +272,18 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(ev
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS+=$(INTERN_CFLAGS)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LDFLAGS+=$(INTERN_LDFLAGS)))
+
+ifeq ($(G),1)
+CFLAGS+=$(GCOV_CFLAGS)
+LDFLAGS+=$(GCOV_LDFLAGS)
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBS+=$(GCOV_LIBS)))
+CFLAGS+=-O0
+else
+CFLAGS+=-O2
+endif
+gcov-target:=$(target-objs:%.o=%.gcov)
+
+$(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
 # LIBRARY contains libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
@@ -374,6 +393,11 @@ _hostbuild: build:=$(action) -f $(srcdir)$(makemore) file
 _hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target)
 	@:
 
+_gcov: action:=_gcov
+_gcov: build:=$(action) -f $(srcdir)$(makemore) file
+_gcov: _info $(subdir-target) $(gcov-target)
+	@:
+
 _configbuild: $(obj) $(if $(wildcard $(CONFIGFILE)),$(join $(builddir),config.h))
 _versionbuild: $(if $(package) $(version), $(join $(builddir),$(VERSIONFILE:%=%.h)))
 
@@ -388,6 +412,7 @@ _install: _info $(install) $(dev-install-y) $(subdir-target)
 _clean: action:=_clean
 _clean: build:=$(action) -f $(srcdir)$(makemore) file
 _clean: $(subdir-target) _clean_objs
+	$(Q)$(call cmd,clean,$(wildcard $(gcov-target)))
 	$(Q)$(call cmd,clean,$(wildcard $(targets)))
 	$(Q)$(call cmd,clean,$(wildcard $(hostslib-target) $(hostbin-target)))
 
@@ -518,6 +543,8 @@ quiet_cmd_as_o_s=AS $*
  cmd_as_o_s=$(TARGETAS) $(ASFLAGS) $($*_CFLAGS) $(SYSROOT_CFLAGS) -c -o $@ $<
 quiet_cmd_cc_o_c=CC $*
  cmd_cc_o_c=$(TARGETCC) $(CFLAGS) $($*_CFLAGS) $(SYSROOT_CFLAGS) -c -o $@ $<
+quiet_cc_gcov_c=GCOV $*
+ cmd_cc_gcov_c=$(TARGETGCOV) -p $<
 quiet_cmd_cc_o_cpp=CXX $*
  cmd_cc_o_cpp=$(TARGETCXX) $(CXXFLAGS) $(CFLAGS) $($*_CXXFLAGS) $($*_CFLAGS) $(SYSROOT_CFLAGS) -c -o $@ $<
 quiet_cmd_moc_hpp=QTMOC $*
@@ -575,6 +602,9 @@ $(obj)%.o:%.c
 
 $(obj)%.o:%.cpp
 	@$(call cmd,cc_o_cpp)
+
+$(obj)%.gcov:%.c
+	@$(call cmd,cc_gcov_c)
 
 $(obj)%.moc.cpp:$(obj)%.ui.hpp
 $(obj)%.moc.cpp:%.hpp
