@@ -1,6 +1,8 @@
-makemore:=$(lastword $(MAKEFILE_LIST))
 MAKEFLAGS+=--no-print-directory
 ifeq ($(inside_makemore),)
+makemore?=$(lastword $(MAKEFILE_LIST))
+export makemore
+
 inside_makemore:=yes
 ##
 # debug tools
@@ -429,13 +431,17 @@ hosttools: action:=_hostbuild
 hosttools: build:=$(action) -f $(srcdir)$(makemore) file
 hosttools: default_action
 
+gcov: action:=_gcov
+gcov: build:=$(action) -f $(srcdir)$(makemore) file
+gcov: default_action
+
 default_action: _info
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
 pc: $(builddir)$(package:%=%.pc)
 
-all: default_action
+all: _configbuild _versionbuild default_action
 
 PHONY: menuconfig gconfig xconfig config oldconfig
 menuconfig gconfig xconfig config:
