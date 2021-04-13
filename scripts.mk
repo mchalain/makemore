@@ -1,9 +1,10 @@
 MAKEFLAGS+=--no-print-directory
 ifeq ($(inside_makemore),)
-makemore?=$(lastword $(MAKEFILE_LIST))
+makemore?=$(word 2,$(MAKEFILE_LIST))
 export makemore
-
+file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 inside_makemore:=yes
+
 ##
 # debug tools
 ##
@@ -38,7 +39,6 @@ data-y:=
 hostbin-y:=
 
 srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
-file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 
 #ifneq ($(findstring -arch,$(CFLAGS)),)
 #ARCH=$(shell echo $(CFLAGS) 2>&1 | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
