@@ -55,20 +55,10 @@ endif
 # CONFIG must be included before "Commands for build and link"
 VERSIONFILE?=version
 DEFCONFIG?=$(srcdir)defconfig
-
-CONFIG?=.config
-ifneq ($(wildcard $(builddir)$(CONFIG)),)
-include $(builddir)$(CONFIG)
-CONFIGFILE=$(buidldir)$(CONFIG)
-$(eval NOCONFIGS:=$(shell awk '/^# .* is not set/{print $$2}' $(builddir)$(CONFIG)))
-$(foreach config,$(NOCONFIGS),$(eval $(config)=n) )
-endif
-
-CONFIGURE_STATUS:=.config.cache
-ifneq ($(wildcard $(builddir)$(CONFIGURE_STATUS)),)
-include $(builddir)$(CONFIGURE_STATUS)
-CONFIGFILE=$(buidldir)$(CONFIGURE_STATUS)
-endif
+CONFIG:=$(builddir).config
+-include $(CONFIG)
+PATHCACHE=$(builddir).pathcache
+-include $(PATHCACHE)
 
 ifneq ($(file),)
   include $(file)
@@ -157,35 +147,8 @@ TARGETAR:=$(TARGETPREFIX)$(AR)
 TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
 TARGETGCOV:=$(TARGETPREFIX)$(GCOV)
 
-ARCH?=$(shell LANG=C $(TARGETCC) -v 2>&1 | $(GREP) Target | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
-libsuffix=$(findstring 64,$(ARCH))
-
-ifneq ($(PREFIX),)
-prefix:=$(PREFIX)
-endif
-prefix?=/usr/local
-prefix:=$(prefix:"%"=%)
-exec_prefix?=$(prefix)
-program_prefix?=
-library_prefix?=lib
-bindir?=$(exec_prefix)/bin
-bindir:=$(bindir:"%"=%)
-sbindir?=$(exec_prefix)/sbin
-sbindir:=$(sbindir:"%"=%)
-libexecdir?=$(exec_prefix)/libexec/$(package:"%"=%)
-libexecdir:=$(libexecdir:"%"=%)
-libdir?=$(word 1,$(wildcard $(exec_prefix)/lib$(libsuffix) $(exec_prefix)/lib))
-libdir:=$(if $(libdir), $(libdir),$(exec_prefix)/lib)
-libdir:=$(libdir:"%"=%)
-sysconfdir?=$(prefix)/etc
-sysconfdir:=$(sysconfdir:"%"=%)
-includedir?=$(prefix)/include
-includedir:=$(includedir:"%"=%)
-datadir?=$(prefix)/share/$(package:"%"=%)
-datadir:=$(datadir:"%"=%)
-pkgdatadir?=$(datadir:"%"=%)
-pkglibdir?=$(libdir)/$(package:"%"=%)
-pkglibdir:=$(pkglibdir:"%"=%)
+ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
+libsuffix?=/$(shell $(TARGETCC) -dumpmachine)
 
 ifneq ($(SYSROOT),)
 sysroot:=$(patsubst "%",%,$(SYSROOT:%/=%)/)
@@ -195,8 +158,26 @@ SYSROOT_CFLAGS+=-isysroot $(sysroot)
 SYSROOT_LDFLAGS+=--sysroot=$(sysroot)
 else
 sysroot:=
-TARGETPATHPREFIX= =
+TARGETPATHPREFIX=
 endif
+
+ifneq ($(PREFIX),)
+prefix=$(PREFIX)
+endif
+prefix?=/usr/local
+exec_prefix?=$(prefix)
+program_prefix?=
+library_prefix?=lib
+bindir?=$(exec_prefix)/bin
+sbindir?=$(exec_prefix)/sbin
+libexecdir?=$(exec_prefix)/libexec/$(package:"%"=%)
+libdir?=$(strip $(exec_prefix)/lib$(if $(wildcard $(sysroot)$(exec_prefix)/lib$(libsuffix)),$(libsuffix)))
+sysconfdir?=$(prefix)/etc
+includedir?=$(prefix)/include
+datadir?=$(prefix)/share/$(package:"%"=%)
+pkgdatadir?=$(datadir)
+pkglibdir?=$(libdir)/$(package:"%"=%)
+PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir
 
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
 LIBRARY+=
@@ -405,7 +386,7 @@ _gcov: build:=$(action) -f $(srcdir)$(makemore) file
 _gcov: _info $(subdir-target) $(gcov-target)
 	@:
 
-_configbuild: $(obj) $(if $(wildcard $(CONFIGFILE)),$(join $(builddir),config.h))
+_configbuild: $(obj) $(if $(wildcard $(CONFIG)),$(join $(builddir),config.h))
 _versionbuild: $(if $(package) $(version), $(join $(builddir),$(VERSIONFILE:%=%.h)))
 
 _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets)
@@ -475,41 +456,14 @@ pc: $(builddir)$(package:%=%.pc)
 
 all: _configbuild _versionbuild default_action
 
-PHONY: menuconfig gconfig xconfig config oldconfig
-menuconfig gconfig xconfig config:
-	$(EDITOR) $(builddir)$(CONFIG)
-
-
-defconfig: $(builddir)$(CONFIG).old cleanconfig FORCE
-	@echo "  "DEFCONFIG $*
-	@$(if $(DEFCONFIG),$(GREP) -v "^#" $(DEFCONFIG) > $(builddir)$(CONFIG))
-
-%_defconfig: $(builddir)$(CONFIG).old cleanconfig FORCE
-	@echo "  "DEFCONFIG $*
-	$(if $(firstword $(wildcard $@ $(srcdir)/configs/$@ $(srcdir)/$@)),,$(error $*_defconfig not found))
-	$(eval DEFCONFIG:=$(firstword $(wildcard $@ $(srcdir)/configs/$@ $(srcdir)/$@)))
-	@$(if $(DEFCONFIG),$(GREP) -v "^#" $(DEFCONFIG) > $(builddir)$(CONFIG))
-
-CONFIGS:=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}' )
-oldconfig: $(DEFCONFIG) FORCE
-	@echo "  "OLDCONFIG
-	@printf "$(strip $(foreach config,$(CONFIGS),$(if $($(config)),$(config)=$($(config))\n)))" > $(builddir)$(CONFIG)
-	@$(eval CONFIGS=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config))))
-	@$(if $(CONFIGS),cat $(DEFCONFIG) | grep $(addprefix -e ,$(CONFIGS)), echo "") >> $(builddir)$(CONFIG)
-
-cleanconfig: $(if $(wildcard $(builddir)$(CONFIG)),distclean)
-
-$(builddir)$(CONFIG).old: $(wildcard $(builddir)$(CONFIG))
-	@$(if $<,mv $< $@)
-
-$(builddir)$(CONFIG):
+NO$(CONFIG):
 	$(warning "Configure the project first")
 	$(warning "  make <...>_defconfig")
 	$(warning "  make defconfig")
 	$(warning "  make config")
 	$(error  )
 
-$(builddir)config.h: $(CONFIGFILE) $(builddir)$(CONFIG)
+$(builddir)config.h: $(CONFIG)
 	@echo "  "CONFIG $*
 	@echo '#ifndef __CONFIG_H__' > $@
 	@echo '#define __CONFIG_H__' >> $@
@@ -522,7 +476,7 @@ $(builddir)config.h: $(CONFIGFILE) $(builddir)$(CONFIG)
 	@$(if $(sysconfdir), sed -i -e "/\\<SYSCONFDIR\\>/d" $@; echo '#define SYSCONFDIR "'$(sysconfdir)'"' >> $@)
 	@echo '#endif' >> $@
 
-$(builddir)$(VERSIONFILE:%=%.h): $(builddir)$(CONFIG)
+$(builddir)$(VERSIONFILE:%=%.h): $(CONFIG)
 	@echo "  "VERSION $*
 	@echo '#ifndef __VERSION_H__' > $@
 	@echo '#define __VERSION_H__' >> $@
@@ -759,5 +713,66 @@ $(gitclone-target): %:
 	$(eval VERSION=$(if $($*_VERSION),-b $($*_VERSION)))
 	@$(call cmd,gitclone)
 
-#if inside makemore
+# Configuration
+.PHONY: menuconfig gconfig xconfig config oldconfig saveconfig defconfig FORCE
+menuconfig gconfig xconfig config:
+	$(EDITOR) $(builddir)$(CONFIG)
+
+cleanconfig: $(if $(wildcard $(CONFIG)),distclean)
+
+$(CONFIG).old: $(wildcard $(CONFIG))
+	@$(if $<,mv $< $@)
+
+# set the list of configuration variables
+SETCONFIGS=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}'; )
+UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^\# .* is not set/{print $$2}')
+CONFIGS:=$(SETCONFIGS)$(UNSETCONFIGS)
+
+oldconfig: $(DEFCONFIG) FORCE
+	@echo "  "OLDCONFIG
+	@printf "$(strip $(foreach config,$(CONFIGS),$(if $($(config)),$(config)=$($(config))\n)))" > $(CONFIG)
+	@$(eval CONFIGS=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config))))
+	@$(if $(CONFIGS),cat $(DEFCONFIG) | grep $(addprefix -e ,$(CONFIGS)), echo "") >> $(CONFIG)
+
+TMPCONFIG=.tmpconfig
+
+# manage the defconfig files
+# 1) use the default defconfig file
+# 2) relaunch with _defconfig target
+defconfig:: _info FORCE
+	$(Q)$(RM) $(CONFIG)
+	$(Q)$(RM) $(TMPCONFIG)
+	$(Q)$(RM) $(PATHCACHE)
+	$(Q)$(MAKE) _defconfig
+
+# manage the defconfig files
+# 1) set the DEFCONFIG variable
+# 2) relaunch with _defconfig target
+%_defconfig:: $(srcdir)configs/%_defconfig _info
+	$(Q)$(RM) $(CONFIG)
+	$(Q)$(RM) $(TMPCONFIG)
+	$(Q)$(RM) $(PATHCACHE)
+	$(Q)$(MAKE) DEFCONFIG=$< _defconfig
+
+quiet_cmd__saveconfig=SAVECONFIG $(notdir $(CONFIG))
+cmd__saveconfig=printf "$(strip $(foreach config,$(CONFIGS),$(config)=$($(config))\n))" > $(CONFIG)
+
+# create a temporary defconfig file in the format of the config file
+$(TMPCONFIG): $(DEFCONFIG)
+	@cat $< | sed 's/\"/\\\"/g' | grep -v '^\#' > $@
+	@cat $< | awk '/^\# .* is not set/{print $$2=n}' >> $@
+
+$(PATHCACHE):
+	@printf "$(strip $(foreach config,$(PATHES),$(config)=$($(config))\n))" > $@
+
+# load the temporary defconfig file
+# if a value is already set on the command line of 'make', the value stay:
+-include $(TMPCONFIG)
+
+# 1) load the defconfig file to replace the .config file
+# 2) build the pathcache
+# recipes) create the .config file with the variables from DEFCONFIG
+_defconfig: $(TMPCONFIG) $(PATHCACHE) FORCE
+	$(Q)$(call cmd,_saveconfig)
+	$(Q)$(RM) $(TMPCONFIG)
 endif
