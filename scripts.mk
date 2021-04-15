@@ -480,7 +480,7 @@ $(builddir)$(VERSIONFILE:%=%.h): $(CONFIG)
 	@echo '#define __VERSION_H__' >> $@
 	@echo '' >> $@
 	@$(if $(version), echo '#define VERSION "'$(version)'"' >> $@)
-	@$(if $(package), echo '#define PACKAGE "'$(package)'"' >> $@)
+	@$(if $(package), echo '#define PACKAGE '$(package)'' >> $@)
 	@$(if $(version), echo '#define PACKAGE_VERSION "'$(version)'"' >> $@)
 	@$(if $(package), echo '#define PACKAGE_NAME "'$(package)'"' >> $@)
 	@$(if $(package), echo '#define PACKAGE_TARNAME "'$(subst " ","_",$(package))'"' >> $@)
