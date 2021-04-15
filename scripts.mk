@@ -369,7 +369,7 @@ action:=_build
 build:=$(action) -f $(srcdir)$(makemore) file
 .DEFAULT_GOAL:=_entry
 .PHONY:_entry _build _install _clean _distclean _check _hostbuild
-_entry: _configbuild _versionbuild default_action
+_entry: _lib-storage-clean _configbuild _versionbuild default_action pc
 
 _info:
 	@:
@@ -387,7 +387,7 @@ _gcov: _info $(subdir-target) $(gcov-target)
 _configbuild: $(obj) $(if $(wildcard $(CONFIG)),$(join $(builddir),config.h))
 _versionbuild: $(if $(package) $(version), $(join $(builddir),$(VERSIONFILE:%=%.h)))
 
-_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets)
+_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets) _lib-storage
 	@:
 
 _install: action:=_install
@@ -486,6 +486,25 @@ $(builddir)$(VERSIONFILE:%=%.h): $(CONFIG)
 	@$(if $(package), echo '#define PACKAGE_TARNAME "'$(subst " ","_",$(package))'"' >> $@)
 	@$(if $(package), echo '#define PACKAGE_STRING "'$(package) $(version)'"' >> $@)
 	@echo '#endif' >> $@
+
+_lib-storage-clean:
+	@${RM} $(builddir).$(package:%=%.pc.in)
+
+_lib-storage:
+	@printf "$(foreach lib,$(sort $(lib-y) $(slib-y)), -l$(lib))" >> $(builddir).$(package:%=%.pc.in)
+
+$(builddir)$(package:%=%.pc): $(builddir).$(package:%=%.pc.in)
+	@echo "  "PKGCONFIG $*
+	@echo "prefix=$(prefix)" > $@
+	@echo "libdir=$(libdir)" >> $@
+	@echo "includedir=$(includedir)" >> $@
+	@echo "" >> $@
+	@echo "Name: $(package)" >> $@
+	@echo "Version: $(version)" >> $@
+	@echo 'Cflags: -I$${includedir}' >> $@
+	@printf 'Libs: -L$${libdir}' >> $@
+	@cat $< >> $@
+	@echo "" >> $@
 
 ##
 # Commands for clean
