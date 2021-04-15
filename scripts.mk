@@ -226,8 +226,6 @@ ifneq ($(wildcard $(builddir)config.h),)
 INTERN_CFLAGS+=-include $(builddir)config.h
 endif
 
-export package version prefix bindir sbindir libdir includedir datadir pkglibdir srcdir builddir sysconfdir
-
 ##
 # objects recipes generation
 ##
@@ -419,7 +417,7 @@ _check: $(subdir-target) $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sb
 PHONY:clean distclean install check default_action pc all
 clean: action:=_clean
 clean: build:=$(action) -f $(srcdir)$(makemore) file
-clean: default_action
+clean: default_action ;
 
 distclean: action:=_distclean
 distclean: build:=$(action) -f $(srcdir)$(makemore) file
@@ -432,29 +430,29 @@ distclean:
 	$(Q)$(call cmd,clean,$(wildcard $(join $(builddir),$(CONFIG:.%=%.h))))
 	$(Q)$(call cmd,clean,$(wildcard $(join $(builddir),$(VERSIONFILE:%=%.h))))
 
-install: action:=_install
-install: build:=$(action) -f $(srcdir)$(makemore) file
-install: _configbuild _versionbuild default_action
+install:: action:=_install
+install:: build:=$(action) -f $(srcdir)$(makemore) file
+install:: _configbuild _versionbuild default_action ;
 
 check: action:=_check
 check: build:=$(action) -s -f $(srcdir)$(makemore) file
-check: $(.DEFAULT_GOAL)
+check: $(.DEFAULT_GOAL) ;
 
 hosttools: action:=_hostbuild
 hosttools: build:=$(action) -f $(srcdir)$(makemore) file
-hosttools: default_action
+hosttools: default_action ;
 
 gcov: action:=_gcov
 gcov: build:=$(action) -f $(srcdir)$(makemore) file
-gcov: default_action
+gcov: default_action ;
 
 default_action: _info
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
-pc: $(builddir)$(package:%=%.pc)
+pc: $(builddir)$(package:%=%.pc) ;
 
-all: _configbuild _versionbuild default_action
+all: _configbuild _versionbuild default_action ;
 
 NO$(CONFIG):
 	$(warning "Configure the project first")
@@ -739,7 +737,7 @@ TMPCONFIG=.tmpconfig
 # manage the defconfig files
 # 1) use the default defconfig file
 # 2) relaunch with _defconfig target
-defconfig:: _info FORCE
+defconfig: _info FORCE
 	$(Q)$(RM) $(CONFIG)
 	$(Q)$(RM) $(TMPCONFIG)
 	$(Q)$(RM) $(PATHCACHE)
@@ -748,7 +746,7 @@ defconfig:: _info FORCE
 # manage the defconfig files
 # 1) set the DEFCONFIG variable
 # 2) relaunch with _defconfig target
-%_defconfig:: $(srcdir)configs/%_defconfig _info
+%_defconfig: $(srcdir)configs/%_defconfig _info
 	$(Q)$(RM) $(CONFIG)
 	$(Q)$(RM) $(TMPCONFIG)
 	$(Q)$(RM) $(PATHCACHE)
