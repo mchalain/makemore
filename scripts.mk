@@ -392,7 +392,7 @@ _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) 
 
 _install: action:=_install
 _install: build:=$(action) -f $(srcdir)$(makemore) file
-_install: _info $(install) $(dev-install-y) $(subdir-target)
+_install: _info $(install) $(dev-install-y) $(subdir-target) $(hook-install-y)
 	@:
 
 _clean: action:=_clean
