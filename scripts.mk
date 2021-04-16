@@ -742,9 +742,14 @@ $(gitclone-target): %:
 # Configuration
 .PHONY: menuconfig gconfig xconfig config oldconfig saveconfig defconfig FORCE
 menuconfig gconfig xconfig config:
-	$(EDITOR) $(builddir)$(CONFIG)
+	$(EDITOR) $(CONFIG)
 
-cleanconfig: $(if $(wildcard $(CONFIG)),distclean)
+configclean:
+	$(Q)$(call cmd,clean,$(wildcard $(CONFIG)))
+	$(Q)$(call cmd,clean,$(wildcard $(CONFIGFILE)))
+	$(Q)$(call cmd,clean,$(wildcard $(VERSIONFILE)))
+	$(Q)$(RM) $(TMPCONFIG)
+	$(Q)$(RM) $(PATHCACHE)
 
 $(CONFIG).old: $(wildcard $(CONFIG))
 	@$(if $<,mv $< $@)
