@@ -53,9 +53,12 @@ endif
 
 # CONFIG could define LD CC or/and CFLAGS
 # CONFIG must be included before "Commands for build and link"
-VERSIONFILE?=version
+VERSIONFILE?=$(builddir)version.h
+CONFIGFILE?=$(builddir)config.h
 DEFCONFIG?=$(srcdir)defconfig
 CONFIG:=$(builddir).config
+TMPCONFIG=$(builddir).tmpconfig
+
 -include $(CONFIG)
 PATHCACHE=$(builddir).pathcache
 -include $(PATHCACHE)
@@ -221,7 +224,7 @@ ifneq ($(src),)
 INTERN_CFLAGS+=-I$(src)
 INTERN_CXXFLAGS+=-I$(src)
 endif
-INTERN_CFLAGS+=-include $(builddir)$(VERSIONFILE:%=%.h)
+INTERN_CFLAGS+=-include $(VERSIONFILE)
 ifneq ($(wildcard $(builddir)config.h),)
 INTERN_CFLAGS+=-include $(builddir)config.h
 endif
@@ -384,8 +387,8 @@ _gcov: build:=$(action) -f $(srcdir)$(makemore) file
 _gcov: _info $(subdir-target) $(gcov-target)
 	@:
 
-_configbuild: $(obj) $(if $(wildcard $(CONFIG)),$(join $(builddir),config.h))
-_versionbuild: $(if $(package) $(version), $(join $(builddir),$(VERSIONFILE:%=%.h)))
+_configbuild: $(obj) $(if $(wildcard $(CONFIG)),$(CONFIGFILE))
+_versionbuild: $(if $(package) $(version), $(VERSIONFILE))
 
 _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets) _lib-storage
 	@:
@@ -461,8 +464,8 @@ NO$(CONFIG):
 	$(warning "  make config")
 	$(error  )
 
-$(builddir)config.h: $(CONFIG)
-	@echo "  "CONFIG $*
+$(CONFIGFILE): $(CONFIG)
+	@echo "  "CONFIG $(notdir $@)
 	@echo '#ifndef __CONFIG_H__' > $@
 	@echo '#define __CONFIG_H__' >> $@
 	@echo '' >> $@
@@ -474,12 +477,14 @@ $(builddir)config.h: $(CONFIG)
 	@$(if $(sysconfdir), sed -i -e "/\\<SYSCONFDIR\\>/d" $@; echo '#define SYSCONFDIR "'$(sysconfdir)'"' >> $@)
 	@echo '#endif' >> $@
 
-$(builddir)$(VERSIONFILE:%=%.h): $(CONFIG)
-	@echo "  "VERSION $*
+$(VERSIONFILE): $(CONFIG)
+	@echo "  "VERSION $(notdir $@)
 	@echo '#ifndef __VERSION_H__' > $@
 	@echo '#define __VERSION_H__' >> $@
 	@echo '' >> $@
-	@$(if $(version), echo '#define VERSION "'$(version)'"' >> $@)
+	@$(if $(version), echo '#define VERSION '$(version)'' >> $@)
+	@$(if $(version), echo '#define VERSION_MAJOR '$(firstword $(subst ., ,$(version)))'' >> $@)
+	@$(if $(version), echo '#define VERSION_MINOR '$(word 2,$(subst ., ,$(version)))'' >> $@)
 	@$(if $(package), echo '#define PACKAGE '$(package)'' >> $@)
 	@$(if $(version), echo '#define PACKAGE_VERSION "'$(version)'"' >> $@)
 	@$(if $(package), echo '#define PACKAGE_NAME "'$(package)'"' >> $@)
