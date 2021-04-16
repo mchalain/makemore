@@ -5,6 +5,8 @@ export makemore
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 inside_makemore:=yes
 
+export package version
+
 ##
 # debug tools
 ##
