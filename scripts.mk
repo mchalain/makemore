@@ -756,8 +756,8 @@ $(CONFIG).old: $(wildcard $(CONFIG))
 
 # set the list of configuration variables
 SETCONFIGS=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}'; )
-UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^\# .* is not set/{print $$2}')
-CONFIGS:=$(SETCONFIGS)$(UNSETCONFIGS)
+UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^. .* is not set/{print $$2}')
+CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
 
 oldconfig: _info FORCE
 	$(Q)$(RM) $(TMPCONFIG)
@@ -791,10 +791,13 @@ defconfig: _info FORCE
 quiet_cmd__saveconfig=SAVECONFIG $(notdir $(CONFIG))
 cmd__saveconfig=printf "$(strip $(foreach config,$(CONFIGS),$(config)=$($(config))\n))" > $(CONFIG)
 
+$(DEFCONFIG):
+	@touch $@
+
 # create a temporary defconfig file in the format of the config file
 $(TMPCONFIG): $(DEFCONFIG)
 	@cat $< | sed 's/\"/\\\"/g' | grep -v '^\#' > $@
-	@cat $< | awk '/^\# .* is not set/{print $$2=n}' >> $@
+	@cat $< | awk '/^. .* is not set/{print $$2"=n"}' >> $@
 
 $(PATHCACHE):
 	@printf "$(strip $(foreach config,$(PATHES),$(config)=$($(config))\n))" > $@
