@@ -429,14 +429,11 @@ clean: default_action ;
 
 distclean: action:=_distclean
 distclean: build:=$(action) -f $(srcdir)$(makemore) file
-distclean: default_action
-distclean:
+distclean: default_action configclean
 	$(Q)$(call cmd,clean_dir,$(wildcard $(buildpath:%=%/)host))
 	$(Q)$(call cmd,clean_dir,$(wildcard $(gitclone-target)))
 	$(Q)$(call cmd,clean,$(wildcard $(download-target)))
-	$(Q)$(call cmd,clean,$(wildcard $(builddir)$(CONFIG)))
-	$(Q)$(call cmd,clean,$(wildcard $(join $(builddir),$(CONFIG:.%=%.h))))
-	$(Q)$(call cmd,clean,$(wildcard $(join $(builddir),$(VERSIONFILE:%=%.h))))
+	$(Q)$(call cmd,clean,$(if $(package), $(wildcard $(join $(builddir),$(package:%=.%.pc.in)))))
 
 install:: action:=_install
 install:: build:=$(action) -f $(srcdir)$(makemore) file
