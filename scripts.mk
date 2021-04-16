@@ -759,13 +759,16 @@ SETCONFIGS=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F
 UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^\# .* is not set/{print $$2}')
 CONFIGS:=$(SETCONFIGS)$(UNSETCONFIGS)
 
-oldconfig: $(DEFCONFIG) FORCE
+oldconfig: _info FORCE
+	$(Q)$(RM) $(TMPCONFIG)
+	$(Q)$(RM) $(PATHCACHE)
+	$(Q)$(MAKE) _oldconfig
+
+_oldconfig: $(DEFCONFIG) $(PATHCACHE)
 	@echo "  "OLDCONFIG
 	@printf "$(strip $(foreach config,$(CONFIGS),$(if $($(config)),$(config)=$($(config))\n)))" > $(CONFIG)
-	@$(eval CONFIGS=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config))))
-	@$(if $(CONFIGS),cat $(DEFCONFIG) | grep $(addprefix -e ,$(CONFIGS)), echo "") >> $(CONFIG)
-
-TMPCONFIG=.tmpconfig
+	@$(eval RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config))))
+	@$(if $(RESTCONFIGS),cat $(DEFCONFIG) | grep $(addprefix -e ,$(CONFIGS)), echo "") >> $(CONFIG)
 
 # manage the defconfig files
 # 1) use the default defconfig file
