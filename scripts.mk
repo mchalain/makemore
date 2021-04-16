@@ -268,6 +268,8 @@ CFLAGS+=-O2
 endif
 gcov-target:=$(target-objs:%.o=%.gcov)
 
+pkgconfig-y:=$(if $(package), $(package:%=%.pc))
+pkgconfig-target:=$(if $(pkgconfig-y), $(if $(package), $(join $(builddir),$(pkgconfig-y))))
 $(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
 # LIBRARY contains libraries name to check
@@ -346,6 +348,7 @@ include-install:=$(addprefix $(DESTDIR)$(includedir:%/=%)/,$(include-y))
 lib-static-install:=$(addprefix $(DESTDIR)$(libdir:%/=%)/,$(addsuffix $(slib-ext:%=.%),$(addprefix lib,$(slib-y))))
 lib-dynamic-install:=$(addprefix $(DESTDIR)$(libdir:%/=%)/,$(addsuffix $(version:%=.%),$(addsuffix $(dlib-ext:%=.%),$(addprefix lib,$(lib-y)))))
 modules-install:=$(addprefix $(DESTDIR)$(pkglibdir:%/=%)/,$(addsuffix $(dlib-ext:%=.%),$(modules-y)))
+pkgconfig-install:=$(addprefix $(DESTDIR)$(libdir:%/=%)/pkgconfig/,$(pkgconfig-y))
 
 $(foreach t,$(bin-y),$(if $(findstring libexec,$($(t)_INSTALL)),$(eval libexec-y+=$(t))))
 $(foreach t,$(bin-y),$(if $(findstring sbin,$($(t)_INSTALL)),$(eval sbin-y+=$(t))))
@@ -365,6 +368,7 @@ dev-install-$(DEVINSTALL)+=$(include-install)
 install+=$(bin-install)
 install+=$(sbin-install)
 install+=$(libexec-install)
+dev-install-$(DEVINSTALL)+=$(pkgconfig-install)
 
 ##
 # main entries
@@ -454,7 +458,7 @@ default_action: _info
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
-pc: $(builddir)$(package:%=%.pc) ;
+pc: $(pkgconfig-target) ;
 
 all: _configbuild _versionbuild default_action ;
 
@@ -494,13 +498,13 @@ $(VERSIONFILE): $(CONFIG)
 	@echo '#endif' >> $@
 
 _lib-storage-clean:
-	@${RM} $(builddir).$(package:%=%.pc.in)
+	@$(if $(package), ${RM} $(builddir).$(package:%=%.pc.in))
 
 _lib-storage:
 	@printf "$(foreach lib,$(sort $(lib-y) $(slib-y)), -l$(lib))" >> $(builddir).$(package:%=%.pc.in)
 
-$(builddir)$(package:%=%.pc): $(builddir).$(package:%=%.pc.in)
-	@echo "  "PKGCONFIG $*
+$(pkgconfig-target): $(builddir).$(package:%=%.pc.in)
+	@echo "  "PKGCONFIG $(notdir $@)
 	@echo "prefix=$(prefix)" > $@
 	@echo "libdir=$(libdir)" >> $@
 	@echo "includedir=$(includedir)" >> $@
@@ -704,6 +708,8 @@ $(libexec-install): $(DESTDIR)$(libexecdir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-
 	@$(call cmd,install_bin)
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(DESTDIR)$(libexecdir) && rm -f $(a) && ln -s $(libexecdir:%/=%)/$*$(bin-ext:%=.%) $(a)))
 
+$(pkgconfig-install): $(DESTDIR)$(libdir:%/=%)/pkgconfig/%.pc: $(builddir)%.pc
+	@$(call cmd,install_bin)
 ##
 # Commands for download
 ##
