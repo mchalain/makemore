@@ -152,6 +152,7 @@ TARGETGCOV:=$(TARGETPREFIX)$(GCOV)
 
 ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
 libsuffix?=/$(shell $(TARGETCC) -dumpmachine)
+SYSROOT=$(shell $(TARGETCC) -print-sysroot)
 
 ifneq ($(SYSROOT),)
 sysroot:=$(patsubst "%",%,$(SYSROOT:%/=%)/)
