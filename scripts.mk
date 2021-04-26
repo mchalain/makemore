@@ -5,8 +5,9 @@ export makemore
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 inside_makemore:=yes
 
-VERSION_MAJOR=$(if $(version),$(firstword $(subst ., ,$(version))))
-export package version
+version_m=$(firstword $(subst ., ,$(version)))
+export package
+export version
 
 ##
 # debug tools
@@ -252,7 +253,7 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LIBRARY+=$($(s:%.c=%)_LIBRARY)) ))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(t)_LIBRARY+=$($(s:%.cpp=%)_LIBRARY)) ))
 
-$(foreach t,$(lib-y) $(modules-y),$(eval $(t)_LDFLAGS+=-Wl,-soname,lib$(t).so$(VERSION_MAJOR:%=.%)))
+$(foreach t,$(lib-y) $(modules-y),$(eval $(t)_LDFLAGS+=-Wl,-soname,lib$(t).so$(version_m:%=.%)))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS+=$($(t)_CFLAGS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CXXFLAGS+=$($(t)_CXXFLAGS-y)))
