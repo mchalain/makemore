@@ -63,7 +63,6 @@ VERSIONFILE?=$(builddir)version.h
 CONFIGFILE?=$(builddir)config.h
 DEFCONFIG?=$(srcdir)defconfig
 CONFIG:=$(builddir).config
-TMPCONFIG=$(builddir).tmpconfig
 
 -include $(CONFIG)
 ifneq ($(wildcard $(CONFIG)),)
@@ -785,34 +784,34 @@ SETCONFIGS=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F
 UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^. .* is not set/{print $$2}')
 CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
 
-oldconfig: _info FORCE
-	$(Q)$(RM) $(TMPCONFIG)
+oldconfig: _info $(CONFIG) FORCE
 	$(Q)$(RM) $(PATHCACHE)
 	$(Q)$(MAKE) _oldconfig
 
 _oldconfig: $(DEFCONFIG) $(PATHCACHE)
 	@echo "  "OLDCONFIG
-	@printf "$(strip $(foreach config,$(CONFIGS),$(if $($(config)),$(config)=$($(config))\n)))" > $(CONFIG)
 	@$(eval RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config))))
 	@$(if $(RESTCONFIGS),cat $(DEFCONFIG) | grep $(addprefix -e ,$(CONFIGS)), echo "") >> $(CONFIG)
 
 # manage the defconfig files
 # 1) use the default defconfig file
 # 2) relaunch with _defconfig target
+defconfig: TMPCONFIG:=$(builddir).tmpconfig
 defconfig: _info FORCE
 	$(Q)$(RM) $(CONFIG)
 	$(Q)$(RM) $(TMPCONFIG)
 	$(Q)$(RM) $(PATHCACHE)
-	$(Q)$(MAKE) _defconfig
+	$(Q)$(MAKE) TMPCONFIG=$(TMPCONFIG) _defconfig
 
 # manage the defconfig files
 # 1) set the DEFCONFIG variable
 # 2) relaunch with _defconfig target
+%_defconfig: TMPCONFIG=$(builddir).tmpconfig
 %_defconfig: $(srcdir)configs/%_defconfig _info
 	$(Q)$(RM) $(CONFIG)
 	$(Q)$(RM) $(TMPCONFIG)
 	$(Q)$(RM) $(PATHCACHE)
-	$(Q)$(MAKE) DEFCONFIG=$< _defconfig
+	$(Q)$(MAKE) DEFCONFIG=$< TMPCONFIG=$(TMPCONFIG) _defconfig
 
 quiet_cmd__saveconfig=SAVECONFIG $(notdir $(CONFIG))
 cmd__saveconfig=printf "$(strip $(foreach config,$(CONFIGS),$(config)=$($(config))\n))" > $(CONFIG)
@@ -820,13 +819,15 @@ cmd__saveconfig=printf "$(strip $(foreach config,$(CONFIGS),$(config)=$($(config
 $(DEFCONFIG):
 	@touch $@
 
-# create a temporary defconfig file in the format of the config file
-$(TMPCONFIG): $(DEFCONFIG)
-	@cat $< | sed 's/\"/\\\"/g' | grep -v '^\#' > $@
-	@cat $< | awk '/^. .* is not set/{print $$2"=n"}' >> $@
-
 $(PATHCACHE):
 	@printf "$(strip $(foreach config,$(PATHES),$(config)=$($(config))\n))" > $@
+
+ifneq ($(TMPCONFIG),)
+# create a temporary defconfig file in the format of the config file
+$(TMPCONFIG): $(DEFCONFIG)
+	@echo "  "TMPCONFIG
+	@cat $< | sed 's/\"/\\\"/g' | grep -v '^\#' > $@
+	@cat $< | awk '/^. .* is not set/{print $$2"=n"}' >> $@
 
 # load the temporary defconfig file
 # if a value is already set on the command line of 'make', the value stay:
@@ -838,4 +839,5 @@ $(PATHCACHE):
 _defconfig: $(TMPCONFIG) $(PATHCACHE) FORCE
 	$(Q)$(call cmd,_saveconfig)
 	$(Q)$(RM) $(TMPCONFIG)
+endif # ifneq ($(TMPCONFIG),)
 endif
