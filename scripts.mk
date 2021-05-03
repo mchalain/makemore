@@ -66,6 +66,10 @@ CONFIG:=$(builddir).config
 TMPCONFIG=$(builddir).tmpconfig
 
 -include $(CONFIG)
+ifneq ($(wildcard $(CONFIG)),)
+# define all unset variable as variable defined as n
+$(foreach config,$(shell cat $(CONFIG) | awk '/^. .* is not set/{print $$2}'),$(eval $(config)=n))
+endif
 PATHCACHE=$(builddir).pathcache
 -include $(PATHCACHE)
 
