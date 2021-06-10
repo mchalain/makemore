@@ -191,7 +191,8 @@ includedir?=$(prefix)/include
 datadir?=$(prefix)/share/$(package:"%"=%)
 pkgdatadir?=$(datadir)
 pkglibdir?=$(libdir)/$(package:"%"=%)
-PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir
+localstatedir?=$(prefix)/var
+PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir
 ifeq ($(destdir),)
 destdir:=$(abspath $(DESTDIR))
 export destdir
@@ -495,6 +496,7 @@ $(CONFIGFILE): $(CONFIG)
 	@$(if $(datadir), sed -i -e "/\\<DATADIR\\>/d" $@; echo '#define DATADIR "'$(datadir)'"' >> $@)
 	@$(if $(pkgdatadir), sed -i -e "/\\<PKG_DATADIR\\>/d" $@; echo '#define PKG_DATADIR "'$(pkgdatadir)'"' >> $@)
 	@$(if $(sysconfdir), sed -i -e "/\\<SYSCONFDIR\\>/d" $@; echo '#define SYSCONFDIR "'$(sysconfdir)'"' >> $@)
+	@$(if $(localsatedir), sed -i -e "/\\<LOCALSTATEDIR\\>/d" $@; echo '#define LOCALSTATEDIR "'$(localstatedir)'"' >> $@)
 	@echo '#endif' >> $@
 
 $(VERSIONFILE): $(CONFIG)
