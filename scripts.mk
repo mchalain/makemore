@@ -790,10 +790,10 @@ oldconfig: _info $(CONFIG) FORCE
 	$(Q)$(RM) $(PATHCACHE)
 	$(Q)$(MAKE) _oldconfig
 
+_oldconfig: RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config)))
 _oldconfig: $(DEFCONFIG) $(PATHCACHE)
 	@echo "  "OLDCONFIG
-	@$(eval RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config))))
-	@$(if $(RESTCONFIGS),cat $(DEFCONFIG) | grep $(addprefix -e ,$(CONFIGS)), echo "") >> $(CONFIG)
+	@$(if $(strip $(RESTCONFIGS)),cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)), echo "") >> $(CONFIG)
 
 # manage the defconfig files
 # 1) use the default defconfig file
