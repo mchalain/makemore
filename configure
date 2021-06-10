@@ -61,11 +61,6 @@ function help {
 	exit
 }
 
-if [ ! -e ${builddir}${CONFIG} -a -e ${srcdir}${DEFCONFIG} ]; then
-	grep -v "^#" ${srcdir}${DEFCONFIG} | awk -F= 't$$1 != t {print $$1"="$$2}' >  ${builddir}${CONFIG}
-	#cp ${srcdir}${DEFCONFIG} ${builddir}${CONFIG}
-fi
-
 if [ -e ${srcdir}${DEFCONFIG} ]; then
   OPTIONS=$(cat ${srcdir}${DEFCONFIG} | ${SED} 's/\#.*//g')
 fi
@@ -256,8 +251,8 @@ if [ -n "$LD_FOR_BUILD" ]; then
 	echo "HOSTLD=$LD_FOR_BUILD" >> ${builddir}$out
 fi
 
+echo "#Makemore 1.0" > ${builddir}${CONFIG}
 printf "\nConfiguration:\n"
-rm ${builddir}${CONFIG}
 if [ -n "$OPTIONS" ]; then
 	for option in $OPTIONS
 	do
