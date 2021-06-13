@@ -352,6 +352,8 @@ targets+=$(bin-target)
 targets+=$(lib-pkgconfig-target)
 targets+=$(pkgconfig-target)
 
+hook-targets:=$(hook-$(action:_%=%)) $(hook-$(action:_%=%)-y)
+
 ifneq ($(CROSS_COMPILE),)
 destdir?=$(sysroot:"%"=%)
 endif
@@ -401,7 +403,7 @@ _info:
 
 _hostbuild: action:=_hostbuild
 _hostbuild: build:=$(action) -f $(srcdir)$(makemore) file
-_hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target)
+_hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target) _hook
 	@:
 
 _gcov: action:=_gcov
@@ -412,17 +414,20 @@ _gcov: _info $(subdir-target) $(gcov-target)
 _configbuild: $(obj) $(if $(wildcard $(CONFIG)),$(CONFIGFILE))
 _versionbuild: $(if $(package) $(version), $(VERSIONFILE))
 
-_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets)
+_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets) _hook
 	@:
 
 _install: action:=_install
 _install: build:=$(action) -f $(srcdir)$(makemore) file
-_install: _info $(install) $(dev-install-y) $(subdir-target) $(hook-install-y)
+_install: _info $(install) $(dev-install-y) $(subdir-target) _hook
 	@:
 
 _clean: action:=_clean
 _clean: build:=$(action) -f $(srcdir)$(makemore) file
-_clean: $(subdir-target) _clean_objs
+_clean: _info $(subdir-target) _clean_objs _clean_targets _hook
+	@:
+
+_clean_targets:
 	$(Q)$(call cmd,clean,$(wildcard $(gcov-target)))
 	$(Q)$(call cmd,clean,$(wildcard $(targets)))
 	$(Q)$(call cmd,clean,$(wildcard $(hostslib-target) $(hostbin-target)))
@@ -438,6 +443,9 @@ _distclean: $(subdir-target) _clean
 _check: action:=_check
 _check: build:=$(action) -s -f $(srcdir)$(makemore) file
 _check: $(subdir-target) $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))
+
+_hook:
+	$(Q)$(foreach target,$(hook-$(action:_%=%)-y),$(MAKE) -f $(file) $(target))
 
 PHONY:clean distclean install check default_action pc all
 clean: action:=_clean
