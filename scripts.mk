@@ -330,13 +330,9 @@ $(foreach t,$(subdir-y),$(eval $(t)_CONFIGURE+=$($(t)_CONFIGURE-y)))
 $(foreach t,$(subdir-y),$(if $($(t)_CONFIGURE), $(eval subdir-project+=$(t))))
 subdir-y:=$(filter-out $(subdir-project),$(subdir-y))
 
-#dispatch from subdir-y to directory paths and makefile paths
-subdir-dir:=$(foreach dir,$(subdir-y),$(filter-out %$(makefile-ext:%=.%), $(filter-out %Makefile, $(dir))))
-subdir-files:=$(foreach dir,$(subdir-y),$(filter %$(makefile-ext:%=.%),$(dir)) $(filter %Makefile, $(dir)))
+#append Makefile to each directory and only directory subdir
+subdir-target:=$(foreach sdir,$(subdir-y),$(if $(filter-out %$(makefile-ext:%=.%), $(filter-out %Makefile, $(sdir))),$(wildcard $(addsuffix /Makefile,$(sdir:%/.=%))),$(wildcard $(sdir))))
 
-#target each Makefile in directories
-subdir-target:=$(wildcard $(addsuffix /Makefile,$(subdir-dir:%/.=%)))
-subdir-target+=$(wildcard $(subdir-files))
 
 #download-target+=$(foreach dl,$(download-y),$(DL)/$(dl)/$($(dl)_SOURCE))
 $(foreach dl,$(download-y),$(if $(findstring git,$($(dl)_SITE_METHOD)),$(eval gitclone-target+=$(dl)),$(eval download-target+=$(dl))))
@@ -653,17 +649,29 @@ $(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(
 $(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)), $(hostobj)%.o)
 	@$(call cmd,hostld_slib)
 
+#########################################
+# subdir evaluation
+quiet_cmd_subdir=SUBDIR $*
+define cmd_subdir
+	$(MAKE) -C $(dir $*) cwdir=$(cwdir)$(dir $*) builddir=$(builddir) $(build)=$(notdir $*)
+endef
+
+quiet_cmd_subdir-project=PROJECT $*
+define cmd_subdir-project
+	$(if $($(*)_CONFIGURE),cd $* && $($(*)_CONFIGURE))
+	$(MAKE) -C $*
+	$(MAKE) -C $* DESTDIR=$(destdir) install
+endef
+
 .PHONY: $(subdir-project) $(subdir-target) FORCE
 $(subdir-project): %: FORCE
-	$(Q)echo "  "PROJECT $*
-	$(Q)cd $* && $($*_CONFIGURE)
-	$(Q)$(MAKE) -C $*
-	$(Q)$(MAKE) -C $* install
+	@$(call cmd,subdir-project)
 
 $(subdir-target): %: FORCE
-	$(Q)echo "  "SUBDIR $*
-	$(Q)$(MAKE) -C $(dir $*) cwdir=$(cwdir)$(dir $*) builddir=$(builddir) $(build)=$(notdir $*)
+	@$(call cmd,subdir)
 
+##########################################
+# Libraries dependencies checking
 $(LIBRARY) $(sort $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))): %:
 	@$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
 	@echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
