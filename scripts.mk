@@ -287,7 +287,7 @@ gcov-target:=$(target-objs:%.o=%.gcov)
 
 $(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
-# LIBRARY contains libraries name to check
+# LIBRARY may contain libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
 # Here the commands remove the informations and store the name into LIBS
 # After LIBS contains all libraries name to link
@@ -314,6 +314,9 @@ $(foreach t,$(bin-y) $(sbin-y),$(if $(findstring dl, $($(t)_LIBS) $(LIBS)),$(eva
 ##
 # targets recipes generation
 ##
+
+lib-check-target:=$(LIBRARY) $(sort $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY)))
+
 ifeq (STATIC,y)
 lib-static-target:=$(addprefix $(obj),$(addsuffix $(slib-ext:%=.%),$(addprefix $(library_prefix),$(slib-y) $(lib-y))))
 else
@@ -442,7 +445,7 @@ _distclean: $(subdir-target) _clean
 
 _check: action:=_check
 _check: build:=$(action) -s -f $(srcdir)$(makemore) file
-_check: $(subdir-target) $(LIBRARY) $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))
+_check: $(subdir-target) $(lib-check-target)
 
 _hook:
 	$(Q)$(foreach target,$(hook-$(action:_%=%)-y),$(MAKE) -f $(file) $(target))
@@ -592,18 +595,6 @@ quiet_cmd_hostld_slib=HOSTLD $*
 	$(HOSTAR) -cvq $@ $^ > /dev/null && \
 	$(HOSTRANLIB) $@
 
-quiet_cmd_check_lib=CHECK $*
-define cmd_check_lib
-	$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
-	echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
-	$(TARGETCC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(INTERN_CFLAGS) $(CFLAGS) > /dev/null 2>&1
-	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(INTERN_LDFLAGS) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
-endef
-
-checkoption:=--exact-version
-prepare_check=$(if $(filter %-, $2),$(eval checkoption:=--atleast-version),$(if $(filter -%, $2),$(eval checkoption:=--max-version)))
-cmd_check2_lib=$(if $(findstring $(3:%-=%), $3),$(if $(findstring $(3:-%=%), $3),,$(eval checkoption:=--atleast-version),$(eval checkoption:=--max-version))) \
-	$(PKGCONFIG) --print-errors $(checkoption) $(subst -,,$3) lib$2
 
 ##
 # build rules
@@ -686,7 +677,20 @@ $(subdir-target): %: FORCE
 ###############################################################################
 # Libraries dependencies checking
 #
-$(LIBRARY) $(sort $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))): %:
+quiet_cmd_check_lib=CHECK $*
+define cmd_check_lib
+	$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
+	echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
+	$(TARGETCC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(INTERN_CFLAGS) $(CFLAGS) > /dev/null 2>&1
+	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(INTERN_LDFLAGS) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
+endef
+
+checkoption:=--exact-version
+prepare_check=$(if $(filter %-, $2),$(eval checkoption:=--atleast-version),$(if $(filter -%, $2),$(eval checkoption:=--max-version)))
+cmd_check2_lib=$(if $(findstring $(3:%-=%), $3),$(if $(findstring $(3:-%=%), $3),,$(eval checkoption:=--atleast-version),$(eval checkoption:=--max-version))) \
+	$(PKGCONFIG) --print-errors $(checkoption) $(subst -,,$3) lib$2
+
+$(lib-check-target): %:
 	@$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
 	@echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
 	@$(call cmd,check_lib,$(firstword $(subst {, ,$(subst },,$@))))
