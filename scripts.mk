@@ -389,7 +389,7 @@ install+=$(sbin-install)
 install+=$(libexec-install)
 dev-install-$(DEVINSTALL)+=$(pkgconfig-install)
 
-##
+###############################################################################
 # main entries
 ##
 action:=_build
@@ -482,6 +482,9 @@ default_action: _info
 
 all: _configbuild _versionbuild default_action ;
 
+###############################################################################
+# Project configuration
+#
 NO$(CONFIG):
 	$(warning "Configure the project first")
 	$(warning "  make <...>_defconfig")
@@ -543,14 +546,15 @@ $(pkgconfig-target): $(builddir)%.pc:$(builddir).%.pc.in
 	@cat $< >> $@
 	@echo "" >> $@
 
-##
+###############################################################################
 # Commands for clean
 ##
 quiet_cmd_clean=$(if $(2),CLEAN  $(notdir $(2)))
  cmd_clean=$(if $(2),$(RM) $(2))
 quiet_cmd_clean_dir=$(if $(2),CLEAN $(notdir $(2)))
  cmd_clean_dir=$(if $(2),$(RM) -r $(2))
-##
+
+###############################################################################
 # Commands for build and link
 ##
 RPATH=$(wildcard $(addsuffix /.,$(wildcard $(CURDIR:%/=%)/* $(obj)*)))
@@ -657,8 +661,9 @@ $(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(
 $(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)), $(hostobj)%.o)
 	@$(call cmd,hostld_slib)
 
-#########################################
+###############################################################################
 # subdir evaluation
+#
 quiet_cmd_subdir=SUBDIR $*
 define cmd_subdir
 	$(MAKE) -C $(dir $*) cwdir=$(cwdir)$(dir $*) builddir=$(builddir) $(build)=$(notdir $*)
@@ -678,8 +683,9 @@ $(subdir-project): %: FORCE
 $(subdir-target): %: FORCE
 	@$(call cmd,subdir)
 
-##########################################
+###############################################################################
 # Libraries dependencies checking
+#
 $(LIBRARY) $(sort $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY))): %:
 	@$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
 	@echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
@@ -687,7 +693,7 @@ $(LIBRARY) $(sort $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y)
 	@$(call prepare_check,$(lastword $(subst {, ,$(subst },,$@))))
 	@$(if $(findstring $(words $(subst {, ,$(subst },,$@))),2),$(call cmd,check2_lib,$(firstword $(subst {, ,$(subst },,$@))),$(lastword $(subst {, ,$(subst },,$@)))))
 
-##
+###############################################################################
 # Commands for install
 ##
 quiet_cmd_install_data=INSTALL $*
@@ -750,7 +756,8 @@ $(libexec-install): $(destdir)$(libexecdir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-
 
 $(pkgconfig-install): $(destdir)$(libdir:%/=%)/pkgconfig/%.pc: $(builddir)%.pc
 	@$(call cmd,install_data)
-##
+
+###############################################################################
 # Commands for download
 ##
 DL?=$(srcdir)/.dl
@@ -782,7 +789,9 @@ $(gitclone-target): %:
 	$(eval VERSION=$(if $($*_VERSION),-b $($*_VERSION)))
 	@$(call cmd,gitclone)
 
+###############################################################################
 # Configuration
+#
 .PHONY: menuconfig gconfig xconfig config oldconfig saveconfig defconfig FORCE
 menuconfig gconfig xconfig config:
 	$(EDITOR) $(CONFIG)
