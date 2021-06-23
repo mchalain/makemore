@@ -824,8 +824,10 @@ $(CONFIG).old: $(wildcard $(CONFIG))
 	$(Q)$(if $<,mv $< $@)
 
 # set the list of configuration variables
+ifneq ($(wildcard $(DEFCONFIG)),)
 SETCONFIGS=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}'; )
 UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^. .* is not set/{print $$2}')
+endif
 CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
 
 oldconfig: _info $(CONFIG) FORCE
