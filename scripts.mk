@@ -70,7 +70,7 @@ ifneq ($(wildcard $(CONFIG)),)
 $(foreach config,$(shell cat $(CONFIG) | awk '/^. .* is not set/{print $$2}'),$(eval $(config)=n))
 endif
 PATHCACHE=$(builddir).pathcache
--include $(PATHCACHE)
+include $(PATHCACHE)
 
 ifneq ($(file),)
   include $(file)
