@@ -787,6 +787,12 @@ define cmd_generate_pkgconfig
 	cat $< >> $@
 	echo "" >> $@
 endef
+quiet_cmd_oldconfig=OLDCONFIG
+cmd_oldconfig=cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFIG)
+
+##
+# config rules
+##
 $(CONFIGFILE): $(CONFIG)
 	@$(call cmd,generate_config_h)
 
@@ -810,14 +816,12 @@ menuconfig gconfig xconfig config:
 	$(EDITOR) $(CONFIG)
 
 configclean:
-	$(Q)$(call cmd,clean,$(wildcard $(CONFIG)))
-	$(Q)$(call cmd,clean,$(wildcard $(CONFIGFILE)))
-	$(Q)$(call cmd,clean,$(wildcard $(VERSIONFILE)))
+	@$(foreach file,$(wildcard $(CONFIG)) $(wildcard $(CONFIGFILE)) $(wildcard $(VERSIONFILE)), $(call cmd,clean,$(file)))
 	$(Q)$(RM) $(TMPCONFIG)
 	$(Q)$(RM) $(PATHCACHE)
 
 $(CONFIG).old: $(wildcard $(CONFIG))
-	@$(if $<,mv $< $@)
+	$(Q)$(if $<,mv $< $@)
 
 # set the list of configuration variables
 SETCONFIGS=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}'; )
@@ -830,8 +834,7 @@ oldconfig: _info $(CONFIG) FORCE
 
 _oldconfig: RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config)))
 _oldconfig: $(DEFCONFIG) $(PATHCACHE)
-	@echo "  "OLDCONFIG
-	@$(if $(strip $(RESTCONFIGS)),cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)), echo "") >> $(CONFIG)
+	@$(if $(strip $(RESTCONFIGS)),$(call cmd,oldconfig))
 
 # manage the defconfig files
 # 1) use the default defconfig file
