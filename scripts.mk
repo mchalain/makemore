@@ -793,10 +793,10 @@ cmd_oldconfig=cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFI
 ##
 # config rules
 ##
-$(CONFIGFILE): $(CONFIG)
+$(CONFIGFILE):
 	@$(call cmd,generate_config_h)
 
-$(VERSIONFILE): $(CONFIG)
+$(VERSIONFILE):
 	@$(call cmd,generate_version_h)
 
 .PHONY: $(lib-y) $(slib-y)
