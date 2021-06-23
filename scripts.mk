@@ -193,6 +193,7 @@ pkgdatadir?=$(datadir)
 pkglibdir?=$(libdir)/$(package:"%"=%)
 localstatedir?=$(prefix)/var
 PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir
+export $(PATHES)
 ifeq ($(destdir),)
 destdir:=$(abspath $(DESTDIR))
 export destdir
@@ -530,7 +531,6 @@ quiet_cmd_hostld_slib=HOSTLD $*
  cmd_hostld_slib=$(RM) $@ && \
 	$(HOSTAR) -cvq $@ $^ > /dev/null && \
 	$(HOSTRANLIB) $@
-
 
 ##
 # build rules
