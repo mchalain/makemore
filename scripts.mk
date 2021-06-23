@@ -415,7 +415,7 @@ _gcov: build:=$(action) -f $(srcdir)$(makemore) file
 _gcov: _info $(subdir-target) $(gcov-target)
 	@:
 
-_configbuild: $(obj) $(if $(wildcard $(CONFIG)),$(CONFIGFILE))
+_configbuild: $(obj) $(CONFIGFILE)
 _versionbuild: $(if $(package) $(version), $(VERSIONFILE))
 
 _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets) _hook
@@ -743,8 +743,7 @@ quiet_cmd_generate_config_h=CONFIG $(notdir $@)
 define cmd_generate_config_h
 	echo '#ifndef __CONFIG_H__' > $@
 	echo '#define __CONFIG_H__' >> $@
-	echo '' >> $@
-	$(GREP) -v "^#" $< | $(AWK) -F= 't$$1 != t {if ($$2 != "n") print "#define "toupper($$1)" "$$2}' >> $@
+	$(if $(wildcard $(CONFIG)),echo '' >> $@; $(GREP) -v "^#" $(CONFIG) | $(AWK) -F= 't$$1 != t {if ($$2 != "n") print "#define "toupper($$1)" "$$2}' >> $@)
 	echo '' >> $@
 	$(if $(pkglibdir), sed -i -e "/\\<PKGLIBDIR\\>/d" $@; echo '#define PKGLIBDIR "'$(pkglibdir)'"' >> $@)
 	$(if $(datadir), sed -i -e "/\\<DATADIR\\>/d" $@; echo '#define DATADIR "'$(datadir)'"' >> $@)
@@ -860,9 +859,6 @@ defconfig: _info FORCE
 
 quiet_cmd__saveconfig=SAVECONFIG $(notdir $(CONFIG))
 cmd__saveconfig=printf "$(strip $(foreach config,$(CONFIGS),$(config)=$($(config))\n))" > $(CONFIG)
-
-$(DEFCONFIG):
-	@touch $@
 
 $(PATHCACHE):
 	@printf "$(strip $(foreach config,$(PATHES),$(config)=$($(config))\n))" > $@
