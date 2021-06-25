@@ -458,7 +458,7 @@ clean: default_action ;
 
 distclean: action:=_distclean
 distclean: build:=$(action) -f $(srcdir)$(makemore) file
-distclean: default_action configclean
+distclean: default_action cleanconfig
 	$(Q)$(call cmd,clean_dir,$(wildcard $(buildpath:%=%/)host))
 	$(Q)$(call cmd,clean_dir,$(wildcard $(gitclone-target)))
 	$(Q)$(call cmd,clean,$(wildcard $(download-target)))
@@ -814,10 +814,13 @@ $(pkgconfig-target): $(builddir)%.pc:$(builddir).%.pc.in
 menuconfig gconfig xconfig config:
 	$(EDITOR) $(CONFIG)
 
-configclean:
-	@$(foreach file,$(wildcard $(CONFIG)) $(wildcard $(CONFIGFILE)) $(wildcard $(VERSIONFILE)), $(call cmd,clean,$(file)))
-	$(Q)$(RM) $(TMPCONFIG)
-	$(Q)$(RM) $(PATHCACHE)
+configfiles+=$(wildcard $(CONFIG))
+configfiles+=$(wildcard $(CONFIGFILE))
+configfiles+=$(wildcard $(VERSIONFILE))
+configfiles+=$(wildcard $(TMPCONFIG))
+configfiles+=$(wildcard $(PATHCACHE))
+cleanconfig: FORCE
+	@$(foreach file,$(configfiles), $(call cmd,clean,$(file)))
 
 $(CONFIG).old: $(wildcard $(CONFIG))
 	$(Q)$(if $<,mv $< $@)
@@ -830,7 +833,7 @@ endif
 CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
 
 oldconfig: _info $(CONFIG) FORCE
-	$(Q)$(RM) $(PATHCACHE)
+	@$(call cmd,clean,$(PATHCACHE))
 	$(Q)$(MAKE) _oldconfig
 
 _oldconfig: RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config)))
@@ -841,32 +844,26 @@ _oldconfig: $(DEFCONFIG) $(PATHCACHE)
 # 1) use the default defconfig file
 # 2) relaunch with _defconfig target
 defconfig: TMPCONFIG:=$(builddir).tmpconfig
-defconfig: _info FORCE
-	$(Q)$(RM) $(CONFIG)
-	$(Q)$(RM) $(TMPCONFIG)
-	$(Q)$(RM) $(PATHCACHE)
+defconfig: _info cleanconfig FORCE
 	$(Q)$(MAKE) TMPCONFIG=$(TMPCONFIG) _defconfig
 
 # manage the defconfig files
 # 1) set the DEFCONFIG variable
 # 2) relaunch with _defconfig target
 %_defconfig: TMPCONFIG=$(builddir).tmpconfig
-%_defconfig: $(srcdir)configs/%_defconfig _info
-	$(Q)$(RM) $(CONFIG)
-	$(Q)$(RM) $(TMPCONFIG)
-	$(Q)$(RM) $(PATHCACHE)
+%_defconfig: $(srcdir)configs/%_defconfig _info cleanconfig
 	$(Q)$(MAKE) DEFCONFIG=$< TMPCONFIG=$(TMPCONFIG) _defconfig
 
-quiet_cmd__saveconfig=SAVECONFIG $(notdir $(CONFIG))
+quiet_cmd__saveconfig=DEFCONFIG $(notdir $(DEFCONFIG))
 cmd__saveconfig=printf "$(strip $(foreach config,$(CONFIGS),$(config)=$($(config))\n))" > $(CONFIG)
 
+# FIXME: PATHCACHE has not to be FORCEd
 $(PATHCACHE):
 	@printf "$(strip $(foreach config,$(PATHES),$(config)=$($(config))\n))" > $@
 
 ifneq ($(TMPCONFIG),)
 # create a temporary defconfig file in the format of the config file
 $(TMPCONFIG): $(DEFCONFIG)
-	@echo "  "TMPCONFIG
 	@cat $< | sed 's/\"/\\\"/g' | grep -v '^\#' > $@
 	@cat $< | awk '/^. .* is not set/{print $$2"=n"}' >> $@
 
