@@ -293,19 +293,21 @@ gcov-target:=$(target-objs:%.o=%.gcov)
 $(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
 define cmd_pkgconfig
-	$(shell $(PKGCONFIG) $(2) $(1) 2> /dev/null && $(PKGCONFIG) $(2) lib$(1)  2> /dev/null)
+	$(shell $(PKGCONFIG) --silence-errors $(2) $(1) || $(PKGCONFIG) --silence-errors $(2) lib$(1))
 endef
 # LIBRARY may contain libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
-# Here the commands remove the informations and store the name into LIBS
+# The LIBRARY values use pkg-config to update CFLAGS, LDFLAGS and LIBS
 # After LIBS contains all libraries name to link
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_LIBS+=$(firstword $(subst {, ,$(subst },,$(l)))) ) ))
-$(foreach l, $(LIBRARY),$(eval LIBS+=$(firstword $(subst {, ,$(subst },,$(l)))) ) )
 
-$(foreach l, $(LIBS),$(eval CFLAGS+=$(call cmd_pkgconfig,$(l), --cflags) ) )
-$(foreach l, $(LIBS),$(eval LDFLAGS+=$(call cmd_pkgconfig,$(l), --libs-only-L) ) )
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBS),$(eval $(t)_CFLAGS+=$(call cmd_pkgconfig,$(l), --cflags))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBS),$(eval $(t)_LDFLAGS+=$(call cmd_pkgconfig,$(l), --libs-only-L) ) ))
+$(foreach l,$(LIBRARY),$(eval CFLAGS+=$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst },,$(l)))), --cflags) ) )
+$(foreach l,$(LIBRARY),$(eval LDFLAGS+=$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst },,$(l)))), --libs-only-L) ) )
+$(eval LIBS=$(sort $(LIBS)))
+$(foreach l,$(LIBRARY),$(eval LIBS+=$(subst -l,,$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst },,$(l)))), --libs-only-l)) ) )
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_CFLAGS+=$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst },,$(l)))), --cflags))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_LDFLAGS+=$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst },,$(l)))), --libs-only-L) ) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_LIBS+=$(subst -l,,$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst },,$(l)))), --libs-only-l)) ) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(eval $(t)_LIBS=$(sort $($(t)_LIBS))))
 
 # set the CFLAGS of each source file
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES) $($(t)_SOURCES-y),$(eval $(s:%.c=%)_CFLAGS+=$($(t)_CFLAGS)) ))
