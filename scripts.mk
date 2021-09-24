@@ -626,21 +626,26 @@ quiet_cmd_check_lib=CHECK $*
 define cmd_check_lib
 	$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
 	echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
+	$(eval CFLAGS:=$(if $(strip $(call cmd_pkgconfig,$(2),--exists --print-errors --errors-to-stdout)),,$(call cmd_pkgconfig,$(2),--cflags)))
+	$(eval LDFLAGS:=$(if $(strip $(call cmd_pkgconfig,$(2),--exists --print-errors --errors-to-stdout)),$(2:%=-l%),$(call cmd_pkgconfig,$(2),--libs)))
 	$(TARGETCC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(INTERN_CFLAGS) $(CFLAGS) > /dev/null 2>&1
-	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(INTERN_LDFLAGS) $(LDFLAGS) $(addprefix -l, $2) > /dev/null 2>&1
+	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(INTERN_LDFLAGS) $(LDFLAGS) $(call cmd_pkgconfig,$(2),--libs) > /dev/null 2>&1
 endef
 
 checkoption:=--exact-version
 prepare_check=$(if $(filter %-, $2),$(eval checkoption:=--atleast-version),$(if $(filter -%, $2),$(eval checkoption:=--max-version)))
 cmd_check2_lib=$(if $(findstring $(3:%-=%), $3),$(if $(findstring $(3:-%=%), $3),,$(eval checkoption:=--atleast-version),$(eval checkoption:=--max-version))) \
-	$(PKGCONFIG) --print-errors $(checkoption) $(subst -,,$3) lib$2
+	$(call cmd_pkgconfig,$(2),--print-errors $(checkoption))
 
 $(lib-check-target): %:
-	@$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
-	@echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
-	@$(call cmd,check_lib,$(firstword $(subst {, ,$(subst },,$@))))
-	@$(call prepare_check,$(lastword $(subst {, ,$(subst },,$@))))
-	@$(if $(findstring $(words $(subst {, ,$(subst },,$@))),2),$(call cmd,check2_lib,$(firstword $(subst {, ,$(subst },,$@))),$(lastword $(subst {, ,$(subst },,$@)))))
+	$(Q)$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
+	$(Q)echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
+	$(eval CHECKLIB=$(firstword $(subst {, ,$(subst },,$@))))
+	$(eval CHECKVERSION=$(if $(findstring {,$@),$(lastword $(subst {, ,$(subst },,$@)))))
+	$(Q)$(call cmd,check_lib,$(CHECKLIB))
+	$(Q)$(call prepare_check,$(CHECKVERSION))
+	$(Q)$(if $(strip $(CHECKVERSION)),echo COUCOU $(CHECKVERSION))
+	$(Q)$(if $(strip $(CHECKVERSION)),$(call cmd,check2_lib,$(CHECKLIB),$(CHECKVERSION)))
 
 ###############################################################################
 # Commands for install
