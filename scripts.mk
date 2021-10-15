@@ -100,6 +100,7 @@ TESTFILE:=makemore_test
 AWK?=awk
 GREP?=grep
 RM?=rm -f
+MKDIR?=mkdir -p
 LN?=ln -f -s
 INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL) -D
@@ -546,7 +547,7 @@ quiet_cmd_hostld_slib=HOSTLD $*
 ##
 .SECONDEXPANSION:
 $(hostobjdir) $(objdir) $(buildpath):
-	$(Q)mkdir -p $@
+	$(Q)$(MKDIR) $@
 
 $(obj)%.tab.c:%.y
 	@$(call cmd,yacc_y)
@@ -723,7 +724,7 @@ define cmd_gitclone
 endef
 
 $(DL)/:
-	mkdir -p $@
+	$(MKDIR) $@
 
 $(download-target): %: $(DL)/
 	$(eval URL=$($*_SITE)/$($*_SOURCE))
