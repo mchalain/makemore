@@ -459,7 +459,7 @@ _check: build:=$(action) -s -f $(srcdir)$(makemore) file
 _check: $(subdir-target) $(lib-check-target)
 
 _hook:
-	$(Q)$(foreach target,$(hook-$(action:_%=%)-y),$(MAKE) -f $(file) $(target))
+	$(Q)$(foreach target,$(hook-$(action:_%=%)-y),$(MAKE) -f $(file) $(target);)
 
 PHONY:clean distclean install check default_action pc all
 clean: action:=_clean
