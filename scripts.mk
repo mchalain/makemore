@@ -380,7 +380,6 @@ data-install:=$(addprefix $(destdir)$(datadir:%/=%)/,$(data-y))
 include-install:=$(addprefix $(destdir)$(includedir:%/=%)/,$(include-y))
 lib-static-install:=$(addprefix $(destdir)$(libdir:%/=%)/,$(addsuffix $(slib-ext:%=.%),$(addprefix lib,$(slib-y))))
 lib-dynamic-install:=$(addprefix $(destdir)$(libdir:%/=%)/,$(addsuffix $(version:%=.%),$(addsuffix $(dlib-ext:%=.%),$(addprefix lib,$(lib-y)))))
-lib-link-install:=$(addprefix $(destdir)$(libdir:%/=%)/,$(addsuffix $(version_m:%=.%),$(addsuffix $(dlib-ext:%=.%),$(addprefix lib,$(lib-y)))))
 modules-install:=$(addprefix $(destdir)$(pkglibdir:%/=%)/,$(addsuffix $(dlib-ext:%=.%),$(modules-y)))
 pkgconfig-install:=$(addprefix $(destdir)$(libdir:%/=%)/pkgconfig/,$(addsuffix .pc,$(sort $(pkgconfig-y))))
 
@@ -657,53 +656,52 @@ define cmd_install_bin
 endef
 quiet_cmd_install_link=INSTALL $*
 define cmd_install_link
-$(LN) $(subst $(destdir),,$(subst .$(version_m),,$@))$(version:%=.%) $@
+$(eval link_dir=$(subst $(destdir),,$(if $(findstring $(dir $(3)),./),$(dir $2),$(dir $3)))) $(MKDIR) $(destdir)$(link_dir) && cd $(destdir)$(link_dir) && $(LN) $(subst $(destdir),,$(subst $(link_dir),,$2)) $(subst $(destdir)$(link_dir),,$3)
 endef
 
 ##
 # install rules
 ##
-$(foreach dir, includedir datadir sysconfdir libdir bindir sbindir ,$(destdir)$($(dir))/):
-	$(Q)mkdir -p $@
+$(foreach dir, includedir datadir sysconfdir libdir bindir sbindir ,$(addprefix $(destdir),$($(dir))/)):
+	$(Q)$(MKDIR) $@
 
 $(include-install): $(destdir)$(includedir:%/=%)/%: %
 	@$(call cmd,install_data)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s $(includedir:%/=%)/$* $(a)))
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(sysconf-install): $(destdir)$(sysconfdir:%/=%)/%: %
 	@$(call cmd,install_data)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s $(sysconfdir:%/=%)/$* $(a)))
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(data-install): $(destdir)$(datadir:%/=%)/%: %
 	@$(call cmd,install_data)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s $(datadir:%/=%)/$* $(a)))
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(lib-static-install): $(destdir)$(libdir:%/=%)/lib%$(slib-ext:%=.%): $(obj)lib%$(slib-ext:%=.%)
 	@$(call cmd,install_bin)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s (libdir:%/=%)/lib$*$(slib-ext:%=.%) $(a)))
-
-$(lib-link-install):
-	@$(call cmd,install_link)
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(lib-dynamic-install): $(destdir)$(libdir:%/=%)/lib%$(dlib-ext:%=.%)$(version:%=.%): $(obj)lib%$(dlib-ext:%=.%)
 	@$(call cmd,install_bin)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s $(libdir:%/=%)/lib$*$(dlib-ext:%=.%) $(a)))
+	@$(if $(version_m),$(call cmd,install_link,$@,$(@:%.$(version)=%.$(version_m))))
+	@$(if $(version_m),$(call cmd,install_link,$(@:%.$(version)=%.$(version_m)),$(@:%.$(version)=%)))
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(modules-install): $(destdir)$(pkglibdir:%/=%)/%$(dlib-ext:%=.%): $(obj)%$(dlib-ext:%=.%)
 	@$(call cmd,install_bin)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s $(pkglibdir:%/=%)/$*$(dlib-ext:%=.%) $(a)))
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(bin-install): $(destdir)$(bindir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-ext:%=.%)
 	@$(call cmd,install_bin)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s $(bindir:%/=%)/$*$(bin-ext:%=.%) $(a)))
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(sbin-install): $(destdir)$(sbindir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-ext:%=.%)
 	@$(call cmd,install_bin)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s $(sbindir:%/=%)/$*$(bin-ext:%=.%) $(a)))
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(libexec-install): $(destdir)$(libexecdir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-ext:%=.%)
 	@$(call cmd,install_bin)
-	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(shell cd $(dir $@) && $(RM) $(a) && ln -s $(libexecdir:%/=%)/$*$(bin-ext:%=.%) $(a)))
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(pkgconfig-install): $(destdir)$(libdir:%/=%)/pkgconfig/%.pc: $(builddir)%.pc
 	@$(call cmd,install_data)
