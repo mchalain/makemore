@@ -234,9 +234,9 @@ SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(pkglibdir))
 endif
 endif
 
-INTERN_CFLAGS+=-I.
-INTERN_CXXFLAGS+=-I.
-INTERN_LDFLAGS+=-L.
+INTERN_CFLAGS=-I.
+INTERN_CXXFLAGS=-I.
+INTERN_LDFLAGS=-L.
 ifneq ($(obj),)
 INTERN_LDFLAGS+=-L$(obj)
 endif
