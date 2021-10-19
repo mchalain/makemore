@@ -107,7 +107,8 @@ INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL) -D
 INSTALL_DATA?=$(INSTALL) -m 644 -D
 PKGCONFIG?=pkg-config
-YACC?=bison
+LESS?=lex
+YACC?=yacc
 MOC?=moc$(QT:%=-%)
 UIC?=uic$(QT:%=-%)
 
@@ -262,6 +263,10 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)_SOUR
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)_SOURCES+=$(patsubst %.hpp,%.moc.cpp,$($(t)_QTHEADERS) $($(t)_QTHEADERS-y))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $(findstring .cpp, $(notdir $($(t)_SOURCES))), $(eval $(t)_LIBS+=stdc++)))
+
+## lex sources substituded to lexer.c files for targets
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)_SOURCES+=$(addprefix $(obj),$(patsubst %.l,%.lexer.c,$($(t)_SOURCES)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)_SOURCES:=$(filter-out %.l,$($(t)_SOURCES))))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs+=$(patsubst %.s,%.o,$(patsubst %.S,%.o,$(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$($(t)_SOURCES)))))))
 target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(if $($(t)-objs), $(addprefix $(obj),$($(t)-objs)),$(if $(wildcard $(t)),$(obj)$(t),$(obj)$(t).o)))
@@ -513,6 +518,8 @@ quiet_cmd_clean_dir=$(if $(2),CLEAN $(notdir $(2)))
 # Commands for build and link
 ##
 RPATH=$(wildcard $(addsuffix /.,$(wildcard $(CURDIR:%/=%)/* $(obj)*)))
+quiet_cmd_lex_l=LEX $*
+ cmd_lex_l=$(LEX) -Cf -o $@ $<
 quiet_cmd_yacc_y=YACC $*
  cmd_yacc_y=$(YACC) -o $@ $<
 quiet_cmd_as_o_s=AS $*
@@ -553,6 +560,12 @@ quiet_cmd_hostld_slib=HOSTLD $*
 .SECONDEXPANSION:
 $(hostobjdir) $(objdir) $(buildpath):
 	$(Q)$(MKDIR) $@
+
+$(obj)%.lexer.c:%.l
+	@$(call cmd,lex_l)
+
+$(obj)%.lexer.o:$(obj)%.lexer.c
+	@$(call cmd,cc_o_c)
 
 $(obj)%.tab.c:%.y
 	@$(call cmd,yacc_y)
