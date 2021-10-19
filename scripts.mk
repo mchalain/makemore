@@ -542,84 +542,84 @@ quiet_cmd_moc_hpp=QTMOC $*
 quiet_cmd_uic_hpp=QTUIC $*
  cmd_uic_hpp=$(UIC) $< > $@
 quiet_cmd_ld_bin=LD $*
- cmd_ld_bin=$(TARGETCC) -L. $($*_LDFLAGS) $(LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -o $@ $^ -Wl,--start-group $(LIBS:%=-l%) $($*_LIBS:%=-l%) -Wl,--end-group -lc
+ cmd_ld_bin=$(TARGETCC) -L. $($*_LDFLAGS) $(LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -o $@ $(filter-out $(file),$^) -Wl,--start-group $(LIBS:%=-l%) $($*_LIBS:%=-l%) -Wl,--end-group -lc
 quiet_cmd_ld_slib=LD $*
  cmd_ld_slib=$(RM) $@ && \
 	$(TARGETAR) -cvq $@ $^ > /dev/null && \
 	$(TARGETRANLIB) $@
 quiet_cmd_ld_dlib=LD $*
- cmd_ld_dlib=$(TARGETCC) $($*_LDFLAGS) $(LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -Bdynamic -shared -o $@ $^ $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
+ cmd_ld_dlib=$(TARGETCC) $($*_LDFLAGS) $(LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -Bdynamic -shared -o $@ $(filter-out $(file),$^) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 
 quiet_cmd_hostcc_o_c=HOSTCC $*
  cmd_hostcc_o_c=$(HOSTCC) $(HOSTCFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_hostcmd_cc_o_cpp=HOSTCXX $*
  cmd_hostcc_o_cpp=$(HOSTCXX) $(HOSTCXXFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_hostld_bin=HOSTLD $*
- cmd_hostld_bin=$(HOSTCC) -o $@ $^ $($*_LDFLAGS) $(HOSTLDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
+ cmd_hostld_bin=$(HOSTCC) -o $@ $(filter-out $(file),$^) $($*_LDFLAGS) $(HOSTLDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 quiet_cmd_hostld_slib=HOSTLD $*
  cmd_hostld_slib=$(RM) $@ && \
-	$(HOSTAR) -cvq $@ $^ > /dev/null && \
+	$(HOSTAR) -cvq $@ $(filter-out $(file),$^) > /dev/null && \
 	$(HOSTRANLIB) $@
 
 ##
 # build rules
 ##
 .SECONDEXPANSION:
-$(hostobjdir) $(objdir) $(buildpath):
+$(hostobjdir) $(objdir) $(buildpath): $(file)
 	$(Q)$(MKDIR) $@
 
-$(obj)%.lexer.c:%.l
+$(obj)%.lexer.c:%.l $(file)
 	@$(call cmd,lex_l)
 
-$(obj)%.lexer.o:$(obj)%.lexer.c
+$(obj)%.lexer.o:$(obj)%.lexer.c $(file)
 	@$(call cmd,cc_o_c)
 
-$(obj)%.tab.c:%.y
+$(obj)%.tab.c:%.y $(file)
 	@$(call cmd,yacc_y)
 
-$(obj)%.o:%.s
+$(obj)%.o:%.s $(file)
 	@$(call cmd,as_o_s)
 
-$(obj)%.o:%.c
+$(obj)%.o:%.c $(file)
 	@$(call cmd,cc_o_c)
 
-$(obj)%.o:%.cpp
+$(obj)%.o:%.cpp $(file)
 	@$(call cmd,cc_o_cpp)
 
-$(obj)%.gcov:%.c
+$(obj)%.gcov:%.c $(file)
 	@$(call cmd,cc_gcov_c)
 
-$(obj)%.moc.cpp:$(obj)%.ui.hpp
-$(obj)%.moc.cpp:%.hpp
+$(obj)%.moc.cpp:$(obj)%.ui.hpp $(file)
+$(obj)%.moc.cpp:%.hpp $(file)
 	@$(call cmd,moc_hpp)
 
-$(obj)%.ui.hpp:%.ui
+$(obj)%.ui.hpp:%.ui $(file)
 	@$(call cmd,uic_hpp)
 
-$(hostobj)%.o:%.c
+$(hostobj)%.o:%.c $(file)
 	@$(call cmd,hostcc_o_c)
 
-$(hostobj)%.o:%.cpp
+$(hostobj)%.o:%.cpp $(file)
 	@$(call cmd,hostcc_o_cpp)
 
-$(lib-static-target): $(obj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o)
+$(lib-static-target): $(obj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o) $(file)
 	@$(call cmd,ld_slib)
 
 $(lib-dynamic-target): CFLAGS+=-fPIC
-$(lib-dynamic-target): $(obj)lib%$(dlib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o)
+$(lib-dynamic-target): $(obj)lib%$(dlib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o) $(file)
 	@$(call cmd,ld_dlib)
 
 $(modules-target): CFLAGS+=-fPIC
-$(modules-target): $(obj)%$(dlib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o)
+$(modules-target): $(obj)%$(dlib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o) $(file)
 	@$(call cmd,ld_dlib)
 
-$(bin-target): $(obj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)),$$(if $$(wildcard $(obj)%$(bin-ext:%=.%)),,$(obj)%.o))
+$(bin-target): $(obj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)),$$(if $$(wildcard $(obj)%$(bin-ext:%=.%)),,$(obj)%.o)) $(file)
 	@$(call cmd,ld_bin)
 
-$(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)),$(if $(wildcard $(obj)%$(bin-ext:%=.%)),,$(hostobj)%.o))
+$(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)),$(if $(wildcard $(obj)%$(bin-ext:%=.%)),,$(hostobj)%.o)) $(file)
 	@$(call cmd,hostld_bin)
 
-$(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)), $(hostobj)%.o)
+$(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)), $(hostobj)%.o) $(file)
 	@$(call cmd,hostld_slib)
 
 ###############################################################################
