@@ -268,13 +268,14 @@ endef
 # objects recipes generation
 ##
 ## Qt support
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES:=$(sort $($(t)_SOURCES) $($(t)_SOURCES-y))))
+#$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES:=$(sort $($(t)_SOURCES) $($(t)_SOURCES-y))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES+=$($(t)_SOURCES-y)))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES+=$(patsubst %.hpp,%.moc.cpp,$($(t)_QTHEADERS) $($(t)_QTHEADERS-y))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $(findstring .cpp, $(notdir $($(t)_SOURCES))), $(eval $(t)_LIBS+=stdc++)))
 
 ## lex sources substituded to lexer.c files for targets
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES+=$(addprefix $(obj),$(patsubst %.l,%.lexer.c,$($(t)_SOURCES)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES+=$(addprefix $(obj),$(patsubst %.l,%.lexer.c,$(filter %.l,$($(t)_SOURCES))))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES:=$(filter-out %.l,$($(t)_SOURCES))))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(call src2obj,$($(t)_SOURCES))))
@@ -282,22 +283,11 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(h
 target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(if $($(t)-objs),$(addprefix $(obj),    $($(t)-objs)), $(if $(wildcard $(t)),$(obj)$(t),    $(obj)$(t).o)))
 target-hostobjs:=$(foreach t, $(hostbin-y) $(hostslib-y),                    $(if $($(t)-objs),$(addprefix $(hostobj),$($(t)-objs)), $(if $(wildcard $(t)),$(hostobj)$(t),$(hostobj)$(t).o)))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(t)_LIBS+=$($(s:%.c=%)_LIBS)) ))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(t)_LIBS+=$($(s:%.cpp=%)_LIBS)) ))
-
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(t)_LIBRARY+=$($(s:%.c=%)_LIBRARY)) ))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(t)_LIBRARY+=$($(s:%.cpp=%)_LIBRARY)) ))
-
-$(foreach t,$(lib-y) $(modules-y),$(eval $(t)_LDFLAGS+=-Wl,-soname,lib$(t).so$(version_m:%=.%)))
-
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS+=$($(t)_CFLAGS-y)))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CXXFLAGS+=$($(t)_CXXFLAGS-y)))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LDFLAGS+=$($(t)_LDFLAGS-y)))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBS+=$($(t)_LIBS-y)))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBRARY+=$($(t)_LIBRARY-y)))
-
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS+=$(INTERN_CFLAGS)))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LDFLAGS+=$(INTERN_LDFLAGS)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS:=$($(t)_CFLAGS) $($(t)_CFLAGS-y)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CXXFLAGS:=$($(t)_CXXFLAGS) $($(t)_CXXFLAGS-y)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LDFLAGS:=$($(t)_LDFLAGS) $($(t)_LDFLAGS-y)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBS:=$($(t)_LIBS) $($(t)_LIBS-y)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBRARY:=$($(t)_LIBRARY) $($(t)_LIBRARY-y)))
 
 ifeq ($(G),1)
 CFLAGS+=$(GCOV_CFLAGS)
@@ -329,15 +319,22 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(eval $(t)_LIBS=$(sort $($(t)_LIBS))))
 
 # set the CFLAGS of each source file
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(s:%.c=%)_CFLAGS+=$($(t)_CFLAGS)) ))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(s:%.cpp=%)_CFLAGS+=$($(t)_CFLAGS)) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.c,%,$(s))_CFLAGS+=$($(t)_CFLAGS)) )))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CFLAGS+=$($(t)_CFLAGS)) )))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(t)_LDFLAGS+=$($(s:%.c=%)_LDFLAGS)) ))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(eval $(t)_LDFLAGS+=$($(s:%.cpp=%)_LDFLAGS)) ))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LDFLAGS+=$($(patsubst %.c,%,$(s))_LDFLAGS)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LDFLAGS+=$($(patsubst %.cpp,%,$(s))_LDFLAGS)))))
+
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LIBS+=$($(patsubst %.c,%,$(s))_LIBS)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LIBS+=$($(patsubst %.cpp,%,$(s))_LIBS)))))
+
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LIBRARY+=$($(patsubst %.c,%,$(s))_LIBRARY)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LIBRARY+=$($(patsubst %.cpp,%,$(s))_LIBRARY)))))
 
 # The Dynamic_Loader library (libdl) allows to load external libraries.
 # If this libraries has to link to the binary functions,
 # this binary has to export the symbol with -rdynamic flag
+$(foreach t,$(lib-y) $(modules-y),$(eval $(t)_LDFLAGS+=-Wl,-soname,lib$(t).so$(version_m:%=.%)))
 $(foreach t,$(bin-y) $(sbin-y),$(if $(findstring dl, $($(t)_LIBS) $(LIBS)),$(eval $(t)_LDFLAGS+=-rdynamic)))
 
 ##
@@ -530,32 +527,32 @@ quiet_cmd_lex_l=LEX $*
 quiet_cmd_yacc_y=YACC $*
  cmd_yacc_y=$(YACC) -o $@ $<
 quiet_cmd_as_o_s=AS $*
- cmd_as_o_s=$(TARGETAS) $(ASFLAGS) $($*_CFLAGS) $(if $(SYSROOT),$(SYSROOT_CFLAGS)) -c -o $@ $<
+ cmd_as_o_s=$(TARGETAS) $(ASFLAGS) $(INTERN_CFLAGS) $($*_CFLAGS) $(if $(SYSROOT),$(SYSROOT_CFLAGS)) -c -o $@ $<
 quiet_cmd_cc_o_c=CC $*
- cmd_cc_o_c=$(TARGETCC) $(CFLAGS) $($*_CFLAGS) $(SYSROOT_CFLAGS) -c -o $@ $<
+ cmd_cc_o_c=$(TARGETCC) $(CFLAGS) $(INTERN_CFLAGS) $($*_CFLAGS) $(SYSROOT_CFLAGS) -c -o $@ $<
 quiet_cc_gcov_c=GCOV $*
  cmd_cc_gcov_c=$(TARGETGCOV) -p $<
 quiet_cmd_cc_o_cpp=CXX $*
- cmd_cc_o_cpp=$(TARGETCXX) $(CXXFLAGS) $(CFLAGS) $($*_CXXFLAGS) $($*_CFLAGS) $(if $(SYSROOT),$(SYSROOT_CFLAGS)) -c -o $@ $<
+ cmd_cc_o_cpp=$(TARGETCXX) $(CXXFLAGS) $(CFLAGS) $(INTERN_CFLAGS) $($*_CXXFLAGS) $($*_CFLAGS) $(if $(SYSROOT),$(SYSROOT_CFLAGS)) -c -o $@ $<
 quiet_cmd_moc_hpp=QTMOC $*
  cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) $($*_MOCFLAGS-y) -o $@ $<
 quiet_cmd_uic_hpp=QTUIC $*
  cmd_uic_hpp=$(UIC) $< > $@
 quiet_cmd_ld_bin=LD $*
- cmd_ld_bin=$(TARGETCC) -L. $($*_LDFLAGS) $(LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -o $@ $(filter-out $(file),$^) -Wl,--start-group $(LIBS:%=-l%) $($*_LIBS:%=-l%) -Wl,--end-group -lc
+ cmd_ld_bin=$(TARGETCC) -L. $(LDFLAGS) $(INTERN_LDFLAGS) $($*_LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -o $@ $(filter-out $(file),$^) -Wl,--start-group $(LIBS:%=-l%) $($*_LIBS:%=-l%) -Wl,--end-group -lc
 quiet_cmd_ld_slib=LD $*
  cmd_ld_slib=$(RM) $@ && \
 	$(TARGETAR) -cvq $@ $^ > /dev/null && \
 	$(TARGETRANLIB) $@
 quiet_cmd_ld_dlib=LD $*
- cmd_ld_dlib=$(TARGETCC) $($*_LDFLAGS) $(LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -Bdynamic -shared -o $@ $(filter-out $(file),$^) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
+ cmd_ld_dlib=$(TARGETCC) $(INTERN_LDFLAGS) $($*_LDFLAGS) $(LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -Bdynamic -shared -o $@ $(filter-out $(file),$^) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 
 quiet_cmd_hostcc_o_c=HOSTCC $*
- cmd_hostcc_o_c=$(HOSTCC) $(HOSTCFLAGS) $($*_CFLAGS) -c -o $@ $<
+ cmd_hostcc_o_c=$(HOSTCC) $(HOSTCFLAGS) $(INTERN_CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_hostcmd_cc_o_cpp=HOSTCXX $*
- cmd_hostcc_o_cpp=$(HOSTCXX) $(HOSTCXXFLAGS) $($*_CFLAGS) -c -o $@ $<
+ cmd_hostcc_o_cpp=$(HOSTCXX) $(HOSTCXXFLAGS) $(INTERN_CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_hostld_bin=HOSTLD $*
- cmd_hostld_bin=$(HOSTCC) -o $@ $(filter-out $(file),$^) $($*_LDFLAGS) $(HOSTLDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
+ cmd_hostld_bin=$(HOSTCC) -o $@ $(filter-out $(file),$^) $(HOSTLDFLAGS) $(INTERN_LDFLAGS) $($*_LDFLAGS) -L. $(LIBS:%=-l%) $($*_LIBS:%=-l%)
 quiet_cmd_hostld_slib=HOSTLD $*
  cmd_hostld_slib=$(RM) $@ && \
 	$(HOSTAR) -cvq $@ $(filter-out $(file),$^) > /dev/null && \
@@ -797,7 +794,7 @@ define cmd_generate_config_h
 endef
 
 define version_h
-#ifndef __VERSION_H__ 
+#ifndef __VERSION_H__
 #define __VERSION_H__
 
 $(if $(version),#define VERSION $(version))
