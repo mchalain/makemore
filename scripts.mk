@@ -247,9 +247,11 @@ ifneq ($(src),)
 INTERN_CFLAGS+=-I$(src)
 INTERN_CXXFLAGS+=-I$(src)
 endif
+ifneq ($(wildcard $(VERSIONFILE)),)
 INTERN_CFLAGS+=-include $(VERSIONFILE)
-ifneq ($(wildcard $(builddir)config.h),)
-INTERN_CFLAGS+=-include $(builddir)config.h
+endif
+ifneq ($(wildcard $(CONFIGFILE)),)
+INTERN_CFLAGS+=-include $(CONFIGFILE)
 endif
 
 ##
@@ -427,7 +429,7 @@ _gcov: _info $(subdir-target) $(gcov-target)
 	@:
 
 _configbuild: $(obj) $(CONFIGFILE)
-_versionbuild: $(if $(package) $(version), $(VERSIONFILE))
+_versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 
 _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets) _hook
 	@:
