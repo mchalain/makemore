@@ -571,20 +571,26 @@ quiet_cmd_hostld_slib=HOSTLD $*
 $(hostobjdir) $(objdir) $(builddir): $(file)
 	$(Q)$(MKDIR) $@
 
-$(obj)%.lexer.c:%.l $(file)
+$(obj)%.lexer.c $(hostobj)%.lexer.c:%.l $(file)
 	@$(call cmd,lex_l)
 
-$(obj)%.lexer.o:$(obj)%.lexer.c $(file)
-	@$(call cmd,cc_o_c)
-
-$(obj)%.tab.c:%.y $(file)
+$(obj)%.tab.c $(hostobj)%.tab.c:%.y $(file)
 	@$(call cmd,yacc_y)
+
+$(obj)%.o:$(obj)%.s $(file)
+	@$(call cmd,as_o_s)
 
 $(obj)%.o:%.s $(file)
 	@$(call cmd,as_o_s)
 
+$(obj)%.o:$(obj)%.c $(file)
+	@$(call cmd,cc_o_c)
+
 $(obj)%.o:%.c $(file)
 	@$(call cmd,cc_o_c)
+
+$(obj)%.o:$(obj)%.cpp $(file)
+	@$(call cmd,cc_o_cpp)
 
 $(obj)%.o:%.cpp $(file)
 	@$(call cmd,cc_o_cpp)
@@ -593,14 +599,22 @@ $(obj)%.gcov:%.c $(file)
 	@$(call cmd,cc_gcov_c)
 
 $(obj)%.moc.cpp:$(obj)%.ui.hpp $(file)
+	@$(call cmd,moc_hpp)
+
 $(obj)%.moc.cpp:%.hpp $(file)
 	@$(call cmd,moc_hpp)
 
 $(obj)%.ui.hpp:%.ui $(file)
 	@$(call cmd,uic_hpp)
 
+$(hostobj)%.o:$(hostobj)%.c $(file)
+	@$(call cmd,hostcc_o_c)
+
 $(hostobj)%.o:%.c $(file)
 	@$(call cmd,hostcc_o_c)
+
+$(hostobj)%.o:$(hostobj)%.cpp $(file)
+	@$(call cmd,hostcc_o_cpp)
 
 $(hostobj)%.o:%.cpp $(file)
 	@$(call cmd,hostcc_o_cpp)
