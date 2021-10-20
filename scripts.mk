@@ -271,7 +271,7 @@ endef
 #$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES:=$(sort $($(t)_SOURCES) $($(t)_SOURCES-y))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES+=$($(t)_SOURCES-y)))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES+=$(patsubst %.hpp,%.moc.cpp,$($(t)_QTHEADERS) $($(t)_QTHEADERS-y))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(patsubst %.hpp,%.moc.cpp,$($(t)_QTHEADERS) $($(t)_QTHEADERS-y))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $(findstring .cpp, $(notdir $($(t)_SOURCES))), $(eval $(t)_LIBS+=stdc++)))
 
 ## lex sources substituded to lexer.c files for targets
@@ -294,6 +294,7 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(ev
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LDFLAGS:=$($(t)_LDFLAGS) $($(t)_LDFLAGS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBS:=$($(t)_LIBS) $($(t)_LIBS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBRARY:=$($(t)_LIBRARY) $($(t)_LIBRARY-y)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_MOCFLAGS:=$($(t)_MOCFLAGS) $($(t)_MOCFLAGS-y)))
 
 ifeq ($(G),1)
 CFLAGS+=$(GCOV_CFLAGS)
@@ -545,7 +546,7 @@ quiet_cc_gcov_c=GCOV $*
 quiet_cmd_cc_o_cpp=CXX $*
  cmd_cc_o_cpp=$(TARGETCXX) $(CXXFLAGS) $(CFLAGS) $(INTERN_CFLAGS) $($*_CXXFLAGS) $($*_CFLAGS) $(if $(SYSROOT),$(SYSROOT_CFLAGS)) -c -o $@ $<
 quiet_cmd_moc_hpp=QTMOC $*
- cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) $($*_MOCFLAGS-y) -o $@ $<
+ cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) -o $@ $<
 quiet_cmd_uic_hpp=QTUIC $*
  cmd_uic_hpp=$(UIC) $< > $@
 quiet_cmd_ld_bin=LD $*
