@@ -51,7 +51,12 @@ export srcdir
 #endif
 ifneq ($(BUILDDIR),)
   builddir=$(BUILDDIR:%/=%)/
-  buildpath:=$(if $(wildcard $(addprefix /.,$(builddir))),$(builddir),$(join $(srcdir),$(builddir)))
+endif
+ifneq ($(CROSS_COMPILE),)
+  builddir:=$(builddir)$(CROSS_COMPILE:%-=%)/
+endif
+ifneq ($(builddir),)
+  builddir:=$(if $(findstring ./,$(dir $(builddir))),$(join $(PWD),$(builddir)),$(builddir))
 else
   builddir=$(srcdir)
 endif
@@ -79,15 +84,10 @@ ifneq ($(file),)
   include $(file)
 endif
 
-ifneq ($(buildpath),)
-  obj=$(addprefix $(buildpath),$(cwdir))
+ifneq ($(builddir),)
+  obj=$(addprefix $(builddir),$(cwdir))
 else
-  ifneq ($(CROSS_COMPILE),)
-	buildpath:=$(builddir)$(CROSS_COMPILE:%-=%)/
-    obj:=$(addprefix $(buildpath),$(cwdir))
-  else
-    obj=
-  endif
+  obj=
 endif
 hostobj:=$(builddir)host/$(cwdir)
 
@@ -567,7 +567,7 @@ quiet_cmd_hostld_slib=HOSTLD $*
 # build rules
 ##
 .SECONDEXPANSION:
-$(hostobjdir) $(objdir) $(buildpath): $(file)
+$(hostobjdir) $(objdir) $(builddir): $(file)
 	$(Q)$(MKDIR) $@
 
 $(obj)%.lexer.c:%.l $(file)
@@ -829,10 +829,10 @@ cmd_oldconfig=cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFI
 ##
 # config rules
 ##
-$(CONFIGFILE):
+$(CONFIGFILE): $(builddir)
 	@$(call cmd,generate_config_h)
 
-$(VERSIONFILE):
+$(VERSIONFILE): $(builddir)
 	@$(call cmd,generate_version_h)
 
 ##
@@ -915,7 +915,7 @@ defconfig: _info cleanconfig FORCE
 quiet_cmd__saveconfig=DEFCONFIG $(notdir $(DEFCONFIG))
 cmd__saveconfig=printf "$(strip $(foreach config,$(CONFIGS),$(config)=$($(config))\n))" > $(CONFIG)
 
-$(PATHCACHE):
+$(PATHCACHE): $(builddir)
 	@printf "$(strip $(foreach config,$(PATHES),$(config)=$($(config))\n))" > $@
 
 ifneq ($(TMPCONFIG),)
