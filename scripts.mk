@@ -536,7 +536,7 @@ RPATH=$(wildcard $(addsuffix /.,$(wildcard $(CURDIR:%/=%)/* $(obj)*)))
 quiet_cmd_lex_l=LEX $*
  cmd_lex_l=$(LEX) -Cf -o $@ $<
 quiet_cmd_yacc_y=YACC $*
- cmd_yacc_y=$(YACC) -o $@ $<
+ cmd_yacc_y=$(YACC) $($*_YACCFLAGS) -o $@ $<
 quiet_cmd_as_o_s=AS $*
  cmd_as_o_s=$(TARGETAS) $(ASFLAGS) $(INTERN_CFLAGS) $($*_CFLAGS) $(if $(SYSROOT),$(SYSROOT_CFLAGS)) -c -o $@ $<
 quiet_cmd_cc_o_c=CC $*
