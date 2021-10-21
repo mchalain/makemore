@@ -85,7 +85,7 @@ ifneq ($(file),)
 endif
 
 ifneq ($(builddir),)
-  obj=$(addprefix $(builddir),$(cwdir))
+  obj=$(builddir)$(cwdir)
 else
   obj=
 endif
@@ -573,7 +573,7 @@ quiet_cmd_hostld_slib=HOSTLD $*
 # build rules
 ##
 .SECONDEXPANSION:
-$(hostobjdir) $(objdir) $(builddir): $(file)
+$(sort $(hostobj) $(obj) $(builddir)): $(file)
 	$(Q)$(MKDIR) $@
 
 $(obj)%.lexer.c $(hostobj)%.lexer.c:%.l $(file)
