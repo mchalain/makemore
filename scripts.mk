@@ -654,8 +654,8 @@ endef
 
 quiet_cmd_subdir-project=PROJECT $*
 define cmd_subdir-project
-	$(if $($(*)_CONFIGURE),cd $* && $($(*)_CONFIGURE))
-	$(MAKE) -C $*
+	$(if $($(*)_CONFIGURE),cd $* && $($(*)_CONFIGURE) &&) \
+	$(MAKE) -C $* && \
 	$(MAKE) -C $* DESTDIR=$(destdir) install
 endef
 
@@ -812,9 +812,9 @@ endef
 
 quiet_cmd_generate_config_h=CONFIG $(notdir $@)
 define cmd_generate_config_h
-	$(file > $@,#ifndef __CONFIG_H__)
-	$(file >> $@,#define __CONFIG_H__)
-	$(foreach config,$(SETCONFIGS),$(if $(findstring n,$($(config))),,$(file >> $@,$(call config_h_line,$(config),$($(config))))))
+	$(file > $@,#ifndef __CONFIG_H__) \
+	$(file >> $@,#define __CONFIG_H__) \
+	$(foreach config,$(SETCONFIGS),$(if $(findstring n,$($(config))),,$(file >> $@,$(call config_h_line,$(config),$($(config)))))) \
 	$(file >> $@,$(call config_h_end))
 endef
 
