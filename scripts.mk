@@ -468,17 +468,19 @@ _clean: _info $(subdir-target) _clean_objs _clean_targets _hook
 	@:
 
 _clean_targets:
-	$(Q)$(call cmd,clean,$(wildcard $(gcov-target)))
-	$(Q)$(call cmd,clean,$(wildcard $(targets)))
-	$(Q)$(call cmd,clean,$(wildcard $(hostslib-target) $(hostbin-target)))
+	@$(call cmd,clean,$(wildcard $(gcov-target)))
+	@$(call cmd,clean,$(wildcard $(targets)))
+	@$(call cmd,clean,$(wildcard $(hostslib-target)))
+	@$(call cmd,clean,$(wildcard $(hostbin-target)))
 
 _clean_objs:
-	$(Q)$(call cmd,clean,$(wildcard $(target-objs)) $(wildcard $(target-hostobjs)))
+	@$(call cmd,clean,$(wildcard $(target-objs)))
+	@$(call cmd,clean,$(wildcard $(target-hostobjs)))
 
 _distclean: action:=_distclean
 _distclean: build:=$(action) -f $(srcdir)$(makemore) file
 _distclean: $(subdir-target) _clean
-	$(Q)$(call cmd,clean_dir,$(filter-out $(src),$(obj)))
+	@$(call cmd,clean_dir,$(filter-out $(srcdir),$(obj)))
 
 _check: action:=_check
 _check: build:=$(action) -s -f $(srcdir)$(makemore) file
