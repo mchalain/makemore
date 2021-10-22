@@ -480,11 +480,6 @@ _clean_objs:
 	@$(call cmd,clean,$(wildcard $(target-objs)))
 	@$(call cmd,clean,$(wildcard $(target-hostobjs)))
 
-_distclean: action:=_distclean
-_distclean: build:=$(action) -f $(srcdir)$(makemore) file
-_distclean: $(subdir-target) _clean
-	@$(call cmd,clean_dir,$(filter-out $(srcdir),$(obj)))
-
 _check: action:=_check
 _check: build:=$(action) -s -f $(srcdir)$(makemore) file
 _check: $(subdir-target) $(lib-check-target)
@@ -497,13 +492,14 @@ clean: action:=_clean
 clean: build:=$(action) -f $(srcdir)$(makemore) file
 clean: default_action ;
 
-distclean: action:=_distclean
+distclean: action:=_clean
 distclean: build:=$(action) -f $(srcdir)$(makemore) file
 distclean: default_action cleanconfig
-	$(Q)$(call cmd,clean_dir,$(wildcard $(buildpath:%=%/)host))
-	$(Q)$(call cmd,clean_dir,$(wildcard $(gitclone-target)))
-	$(Q)$(call cmd,clean,$(wildcard $(download-target)))
-	$(Q)$(call cmd,clean,$(if $(package), $(wildcard $(builddir).*.pc.in)))
+	@$(call cmd,clean_dir,$(wildcard $(builddir)host))
+	@$(call cmd,clean_dir,$(filter-out $(srcdir),$(builddir)))
+	@$(call cmd,clean_dir,$(wildcard $(gitclone-target)))
+	@$(call cmd,clean,$(wildcard $(download-target)))
+	@$(call cmd,clean,$(if $(package), $(wildcard $(builddir).*.pc.in)))
 
 install:: action:=_install
 install:: build:=$(action) -f $(srcdir)$(makemore) file
@@ -533,7 +529,7 @@ all: _configbuild _versionbuild default_action ;
 quiet_cmd_clean=$(if $(2),CLEAN  $(notdir $(2)))
  cmd_clean=$(if $(2),$(RM) $(2))
 quiet_cmd_clean_dir=$(if $(2),CLEAN $(notdir $(2)))
- cmd_clean_dir=$(if $(2),$(RM) -r $(2))
+ cmd_clean_dir=$(if $(2),$(RM) -d $(2))
 
 ###############################################################################
 # Commands for build and link
