@@ -40,6 +40,7 @@ slib-y:=
 modules-y:=
 modules-y:=
 data-y:=
+doc-y:=
 hostbin-y:=
 
 srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
@@ -199,7 +200,8 @@ datadir?=$(prefix)/share/$(package:"%"=%)
 pkgdatadir?=$(datadir)
 pkglibdir?=$(libdir)/$(package:"%"=%)
 localstatedir?=$(prefix)/var
-PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir
+docdir?=?=$(prefix)/share/$(package:"%"=%)
+PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir docdir
 export $(PATHES)
 ifeq ($(destdir),)
 destdir:=$(abspath $(DESTDIR))
@@ -403,6 +405,7 @@ endif
 ##
 sysconf-install:=$(addprefix $(destdir)$(sysconfdir:%/=%)/,$(sysconf-y))
 data-install:=$(addprefix $(destdir)$(datadir:%/=%)/,$(data-y))
+doc-install:=$(addprefix $(destdir)$(docdir:%/=%)/,$(doc-y))
 include-install:=$(addprefix $(destdir)$(includedir:%/=%)/,$(include-y))
 lib-static-install:=$(addprefix $(destdir)$(libdir:%/=%)/,$(addsuffix $(slib-ext:%=.%),$(addprefix lib,$(slib-y))))
 lib-dynamic-install:=$(addprefix $(destdir)$(libdir:%/=%)/,$(addsuffix $(version:%=.%),$(addsuffix $(dlib-ext:%=.%),$(addprefix lib,$(lib-y)))))
@@ -454,7 +457,7 @@ _gcov: _info $(subdir-target) $(gcov-target)
 _configbuild: $(obj) $(CONFIGFILE)
 _versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 
-_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(targets) _hook
+_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(doc-y) $(targets) _hook
 	@:
 
 _install: action:=_install
@@ -712,7 +715,7 @@ endef
 ##
 # install rules
 ##
-$(foreach dir, includedir datadir sysconfdir libdir bindir sbindir ,$(addprefix $(destdir),$($(dir))/)):
+$(foreach dir, includedir datadir docdir sysconfdir libdir bindir sbindir ,$(addprefix $(destdir),$($(dir))/)):
 	$(Q)$(MKDIR) $@
 
 $(include-install): $(destdir)$(includedir:%/=%)/%: %
@@ -724,6 +727,10 @@ $(sysconf-install): $(destdir)$(sysconfdir:%/=%)/%: %
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(data-install): $(destdir)$(datadir:%/=%)/%: %
+	@$(call cmd,install_data)
+	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
+
+$(doc-install): $(destdir)$(docdir:%/=%)/%: %
 	@$(call cmd,install_data)
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
