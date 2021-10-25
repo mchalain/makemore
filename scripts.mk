@@ -239,7 +239,6 @@ endif
 
 INTERN_CFLAGS=-I.
 INTERN_CXXFLAGS=-I.
-INTERN_LDFLAGS=-L.
 ifneq ($(src),)
 INTERN_CFLAGS+=-I$(src)
 INTERN_CXXFLAGS+=-I$(src)
@@ -251,11 +250,22 @@ ifneq ($(wildcard $(CONFIGFILE)),)
 INTERN_CFLAGS+=-include $(CONFIGFILE)
 endif
 
+# Update LDFLAGS for each directory containing at least one library.
+# The LDFLAGS must be available for all binaries of the project.
+ifneq ($(lib-t) $(slib-y),)
 ifneq ($(obj),)
-LDFLAGS+=-L$(obj)
+INTERN_LDFLAGS+=-L$(obj)
+INTERN_LDFLAGS:=$(sort $(INTERN_LDFLAGS))
+export INTERN_LDFLAGS
 endif
+endif
+
+ifneq ($(hostslib-y),)
 ifneq ($(hostobj),)
 HOSTLDFLAGS+=-L$(hostobj)
+HOSTLDFLAGS:=$(sort $(HOSTLDFLAGS))
+export HOSTLDFLAGS
+endif
 endif
 
 define ass2obj
