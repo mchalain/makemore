@@ -201,7 +201,7 @@ pkgdatadir?=$(datadir)
 pkglibdir?=$(libdir)/$(package:"%"=%)
 localstatedir?=$(prefix)/var
 docdir?=?=$(prefix)/share/$(package:"%"=%)
-PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir docdir
+PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir docdir builddir
 export $(PATHES)
 ifeq ($(destdir),)
 destdir:=$(abspath $(DESTDIR))
@@ -651,7 +651,7 @@ $(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addpref
 #
 quiet_cmd_subdir=SUBDIR $*
 define cmd_subdir
-	$(MAKE) -C $(dir $*) cwdir=$(cwdir)$(dir $*) builddir=$(builddir) $(build)=$(notdir $*)
+	$(MAKE) -C $(dir $*) cwdir=$(cwdir)$(filter-out ./,$(dir $*)) builddir=$(builddir) $(build)=$(notdir $*)
 endef
 
 quiet_cmd_subdir-project=PROJECT $*
