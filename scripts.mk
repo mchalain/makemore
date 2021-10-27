@@ -854,11 +854,6 @@ define cmd_generate_version_h
 	$(file > $@,$(call version_h))
 endef
 
-quiet_cmd_generate_pkgconfig=PKGCONFIG $*
-define cmd_generate_pkgconfig
-	$(file > $@,$(call pkgconfig_pc))
-endef
-
 quiet_cmd_oldconfig=OLDCONFIG
 cmd_oldconfig=cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFIG)
 
@@ -886,12 +881,17 @@ libdir=$(libdir:$(prefix)/%=$${exec_prefix}/%)
 pkglibdir=$(pkglibdir:$(prefix)/%=$${exec_prefix}/%)
 includedir=$(includedir:$(prefix)/%=$${prefix}/%)
 
-Name: $(package)
+Name: $(1)
 Version: $(version)
-Description: $(package)
+Description: $($(1)_DESC)
 Cflags: -I$${includedir}
 Libs: -L$${libdir} $(shell cat $<)
 
+endef
+
+quiet_cmd_generate_pkgconfig=PKGCONFIG $*
+define cmd_generate_pkgconfig
+	$(file > $@,$(call pkgconfig_pc,$*))
 endef
 
 .PHONY: $(lib-y) $(slib-y)
