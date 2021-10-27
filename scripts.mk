@@ -509,7 +509,7 @@ distclean: default_action cleanconfig
 	@$(call cmd,clean_dir,$(filter-out $(srcdir),$(builddir)))
 	@$(call cmd,clean_dir,$(wildcard $(gitclone-target)))
 	@$(call cmd,clean,$(wildcard $(download-target)))
-	@$(call cmd,clean,$(if $(package), $(wildcard $(builddir).*.pc.in)))
+	@$(call cmd,clean,$(wildcard $(builddir).*.pc.in))
 
 install:: action:=_install
 install:: build:=$(action) -f $(srcdir)$(makemore) file
@@ -914,7 +914,7 @@ configfiles+=$(wildcard $(VERSIONFILE))
 configfiles+=$(wildcard $(TMPCONFIG))
 configfiles+=$(wildcard $(PATHCACHE))
 cleanconfig: FORCE
-	@$(foreach file,$(configfiles), $(call cmd,clean,$(file)))
+	@$(foreach file,$(configfiles), $(call cmd,clean,$(file));)
 
 $(CONFIG).old: $(wildcard $(CONFIG))
 	$(Q)$(if $<,mv $< $@)
