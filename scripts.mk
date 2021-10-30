@@ -5,6 +5,8 @@ export makemore
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 inside_makemore:=yes
 
+package:=$(package:"%"=%)
+version:=$(version:"%"=%)
 version_m=$(firstword $(subst ., ,$(version)))
 export package
 export version
@@ -192,15 +194,15 @@ program_prefix?=
 library_prefix?=lib
 bindir?=$(exec_prefix)/bin
 sbindir?=$(exec_prefix)/sbin
-libexecdir?=$(exec_prefix)/libexec/$(package:"%"=%)
+libexecdir?=$(exec_prefix)/libexec/$(package)
 libdir?=$(strip $(exec_prefix)/lib$(if $(wildcard $(sysroot)$(exec_prefix)/lib$(libsuffix)),$(libsuffix)))
 sysconfdir?=$(prefix)/etc
 includedir?=$(prefix)/include
-datadir?=$(prefix)/share/$(package:"%"=%)
+datadir?=$(prefix)/share/$(package)
 pkgdatadir?=$(datadir)
-pkglibdir?=$(libdir)/$(package:"%"=%)
+pkglibdir?=$(libdir)/$(package)
 localstatedir?=$(prefix)/var
-docdir?=?=$(prefix)/share/$(package:"%"=%)
+docdir?=?=$(prefix)/share/$(package)
 PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir docdir builddir
 export $(PATHES)
 ifeq ($(destdir),)
