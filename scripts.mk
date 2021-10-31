@@ -298,9 +298,10 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(h
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$($(t)_GENERATED)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(call src2obj,$($(t)_GENERATED))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(call src2obj,$($(t)_SOURCES))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)-objs),,$(eval $(t)-objs+=$(t))))
 
-target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(if $($(t)-objs),$(addprefix $(obj),    $($(t)-objs)), $(if $(wildcard $(t)),$(obj)$(t),    $(obj)$(t).o)))
-target-hostobjs:=$(foreach t, $(hostbin-y) $(hostslib-y),                    $(if $($(t)-objs),$(addprefix $(hostobj),$($(t)-objs)), $(if $(wildcard $(t)),$(hostobj)$(t),$(hostobj)$(t).o)))
+target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(addprefix $(obj),    $($(t)-objs)))
+target-hostobjs:=$(foreach t, $(hostbin-y) $(hostslib-y),                    $(addprefix $(hostobj),$($(t)-objs)))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS:=$($(t)_CFLAGS) $($(t)_CFLAGS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CXXFLAGS:=$($(t)_CXXFLAGS) $($(t)_CXXFLAGS-y)))
@@ -491,8 +492,8 @@ _clean_objs:
 	@$(call cmd,clean,$(wildcard $(target-hostobjs)))
 
 _clean_objdirs:
-       @$(if $(target-objs),$(call cmd,clean_dir,$(realpath $(filter-out $(srcdir)$(cwdir),$(obj)))))
-       @$(if $(target-hostobjs),$(call cmd,clean_dir,$(wildcard $(realpath $(hostobj)))))
+	@$(if $(target-objs),$(call cmd,clean_dir,$(realpath $(filter-out $(srcdir)$(cwdir),$(obj)))))
+	@$(if $(target-hostobjs),$(call cmd,clean_dir,$(wildcard $(realpath $(hostobj)))))
 
 _check: action:=_check
 _check: build:=$(action) -s -f $(srcdir)$(makemore) file
@@ -640,24 +641,24 @@ $(hostobj)%.o:$(hostobj)%.cpp $(file)
 $(hostobj)%.o:%.cpp $(file)
 	@$(call cmd,hostcc_o_cpp)
 
-$(lib-static-target): $(obj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o) $(file)
+$(lib-static-target): $(obj)lib%$(slib-ext:%=.%): $$(addprefix $(obj),$$(%-objs)) $(file)
 	@$(call cmd,ld_slib)
 
 $(lib-dynamic-target): CFLAGS+=-fPIC
-$(lib-dynamic-target): $(obj)lib%$(dlib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o) $(file)
+$(lib-dynamic-target): $(obj)lib%$(dlib-ext:%=.%): $$(addprefix $(obj),$$(%-objs)) $(file)
 	@$(call cmd,ld_dlib)
 
 $(modules-target): CFLAGS+=-fPIC
-$(modules-target): $(obj)%$(dlib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)), $(obj)%.o) $(file)
+$(modules-target): $(obj)%$(dlib-ext:%=.%): $$(addprefix $(obj),$$(%-objs)) $(file)
 	@$(call cmd,ld_dlib)
 
-$(bin-target): $(obj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(obj),$$(%-objs)),$$(if $$(wildcard $(obj)%$(bin-ext:%=.%)),,$(obj)%.o)) $(file)
+$(bin-target): $(obj)%$(bin-ext:%=.%): $$(addprefix $(obj),$$(%-objs)) $(file)
 	@$(call cmd,ld_bin)
 
-$(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)),$(if $(wildcard $(obj)%$(bin-ext:%=.%)),,$(hostobj)%.o)) $(file)
+$(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(addprefix $(hostobj),$$(%-objs)) $(file)
 	@$(call cmd,hostld_bin)
 
-$(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(if $$(%-objs), $$(addprefix $(hostobj),$$(%-objs)), $(hostobj)%.o) $(file)
+$(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(addprefix $(hostobj),$$(%-objs)) $(file)
 	@$(call cmd,hostld_slib)
 
 ###############################################################################
