@@ -53,15 +53,12 @@ export srcdir
 #buildpath=$(join $(srcdir),$(ARCH))
 #endif
 ifneq ($(BUILDDIR),)
-  builddir=$(BUILDDIR:%/=%)/
+  builddir:=$(if $(findstring ./,$(dir $(BUILDDIR:%/=%))),$(PWD)/)$(BUILDDIR:%/=%)/
+else
+  builddir:=$(srcdir)
 endif
 ifneq ($(CROSS_COMPILE),)
   builddir:=$(builddir)$(CROSS_COMPILE:%-=%)/
-endif
-ifneq ($(builddir),)
-  builddir:=$(if $(findstring ./,$(dir $(builddir))),$(join $(PWD),$(builddir)),$(builddir))
-else
-  builddir=$(srcdir)
 endif
 
 # internal configuration to install HEADERS file or not
