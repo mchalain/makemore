@@ -477,7 +477,7 @@ _install: _info $(install) $(dev-install-y) $(subdir-target) _hook
 
 _clean: action:=_clean
 _clean: build:=$(action) -f $(srcdir)$(makemore) file
-_clean: _info $(subdir-target) _clean_objs _clean_targets _hook
+_clean: _info $(subdir-target) _clean_objs _clean_targets _clean_objdirs _hook
 	@:
 
 _clean_targets:
@@ -489,6 +489,10 @@ _clean_targets:
 _clean_objs:
 	@$(call cmd,clean,$(wildcard $(target-objs)))
 	@$(call cmd,clean,$(wildcard $(target-hostobjs)))
+
+_clean_objdirs:
+       @$(if $(target-objs),$(call cmd,clean_dir,$(realpath $(filter-out $(srcdir)$(cwdir),$(obj)))))
+       @$(if $(target-hostobjs),$(call cmd,clean_dir,$(wildcard $(realpath $(hostobj)))))
 
 _check: action:=_check
 _check: build:=$(action) -s -f $(srcdir)$(makemore) file
@@ -536,7 +540,7 @@ all: _configbuild _versionbuild default_action ;
 ###############################################################################
 # Commands for clean
 ##
-quiet_cmd_clean=$(if $(2),CLEAN  $(notdir $(2)))
+quiet_cmd_clean=$(if $(2),CLEAN $(notdir $(2)))
  cmd_clean=$(if $(2),$(RM) $(2))
 quiet_cmd_clean_dir=$(if $(2),CLEAN $(notdir $(2)))
  cmd_clean_dir=$(if $(2),$(RM) -d $(2))
