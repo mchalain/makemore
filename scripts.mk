@@ -236,14 +236,6 @@ ifneq ($(sysroot),)
   endif
 endif
 
-#CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
-LIBRARY+=
-LDFLAGS+=
-
-GCOV_CFLAGS:=--coverage -fprofile-arcs -ftest-coverage
-GCOV_LDFLAGS:=--coverage -fprofile-arcs -ftest-coverage
-GCOV_LIBS:=gcov
-
 INTERN_CFLAGS=-I.
 INTERN_CXXFLAGS=-I.
 ifneq ($(src),)
@@ -318,15 +310,16 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(ev
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBRARY:=$($(t)_LIBRARY) $($(t)_LIBRARY-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_MOCFLAGS:=$($(t)_MOCFLAGS) $($(t)_MOCFLAGS-y)))
 
+O?=2
 ifeq ($(G),1)
-CFLAGS+=$(GCOV_CFLAGS)
-LDFLAGS+=$(GCOV_LDFLAGS)
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBS+=$(GCOV_LIBS)))
-CFLAGS+=-O0
-else
-CFLAGS+=-O2
+INTERN_CFLAGS+=--coverage -fprofile-arcs -ftest-coverage
+INTERN_LDFLAGS+=--coverage -fprofile-arcs -ftest-coverage
+INTERN_LIBS+=gcov
+O:=0
 endif
 gcov-target:=$(target-objs:%.o=%.gcov)
+
+CFLAGS+=-O$(O)
 
 $(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
