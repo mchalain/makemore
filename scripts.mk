@@ -167,7 +167,18 @@ TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
 TARGETGCOV:=$(TARGETPREFIX)$(GCOV)
 
 ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
-libsuffix?=/$(shell $(TARGETCC) -dumpmachine)
+ifeq ($(libdir),)
+  SYSTEM?=$(shell $(TARGETCC) -dumpmachine)
+  LONG_BIT?=$(shell LANG=C getconf LONG_BIT)
+  ifneq ($(wildcard $(sysroot)/lib/$(SYSTEM)),)
+    libsuffix?=/$(SYSTEM)
+   else
+     ifneq ($(wildcard $(sysroot)/lib$(LONG_BIT)),)
+       libsuffix?=$(LONG_BIT)
+    endif
+  endif
+endif
+
 ifeq ($(CC),gcc)
 SYSROOT=$(shell $(TARGETCC) -print-sysroot)
 endif
@@ -184,16 +195,17 @@ TARGETPATHPREFIX=
 endif
 
 ifneq ($(PREFIX),)
-prefix=$(PREFIX)
+  prefix:=$(PREFIX)
 endif
 prefix?=/usr/local
+prefix:=$(patsubst "%",%,$(prefix:%/=%))
 exec_prefix?=$(prefix)
 program_prefix?=
 library_prefix?=lib
 bindir?=$(exec_prefix)/bin
 sbindir?=$(exec_prefix)/sbin
 libexecdir?=$(exec_prefix)/libexec/$(package)
-libdir?=$(strip $(exec_prefix)/lib$(if $(wildcard $(sysroot)$(exec_prefix)/lib$(libsuffix)),$(libsuffix)))
+libdir?=$(strip $(exec_prefix)/lib$(libsuffix))
 sysconfdir?=$(prefix)/etc
 includedir?=$(prefix)/include
 datadir?=$(prefix)/share/$(package)
@@ -204,8 +216,8 @@ docdir?=?=$(prefix)/share/$(package)
 PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir docdir builddir
 export $(PATHES)
 ifeq ($(destdir),)
-destdir:=$(abspath $(DESTDIR))
-export destdir
+  destdir:=$(abspath $(DESTDIR))
+  export destdir
 endif
 
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
