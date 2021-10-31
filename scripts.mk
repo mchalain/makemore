@@ -180,19 +180,13 @@ ifeq ($(libdir),)
 endif
 
 ifeq ($(CC),gcc)
-SYSROOT=$(shell $(TARGETCC) -print-sysroot)
+  SYSROOT=$(shell $(TARGETCC) -print-sysroot)
 endif
 
 ifneq ($(SYSROOT),)
-sysroot:=$(patsubst "%",%,$(SYSROOT:%/=%)/)
-TARGETPATHPREFIX=$(sysroot)
-SYSROOT_CFLAGS+=--sysroot=$(sysroot)
-SYSROOT_CFLAGS+=-isysroot $(sysroot)
-SYSROOT_LDFLAGS+=--sysroot=$(sysroot)
-else
-sysroot:=
-TARGETPATHPREFIX=
+  sysroot:=$(SYSROOT)
 endif
+sysroot:=$(patsubst "%",%,$(sysroot:%/=%))
 
 ifneq ($(PREFIX),)
   prefix:=$(PREFIX)
@@ -220,6 +214,28 @@ ifeq ($(destdir),)
   export destdir
 endif
 
+ifneq ($(sysroot),)
+  SYSROOT_CFLAGS+=--sysroot=$(sysroot)
+  SYSROOT_CFLAGS+=-isysroot $(sysroot)
+  SYSROOT_LDFLAGS+=--sysroot=$(sysroot)
+  ifneq ($(strip $(includedir)),)
+    SYSROOT_CFLAGS+=-I$(sysroot)$(strip $(includedir))
+  endif
+  ifneq ($(strip $(libdir)),)
+    RPATHFLAGS+=-Wl,-rpath,$(strip $(libdir))
+    SYSROOT_LDFLAGS+=-L$(sysroot)$(strip $(libdir))
+  endif
+  ifneq ($(strip $(pkglibdir)),)
+    RPATHFLAGS+=-Wl,-rpath,$(strip $(pkglibdir))
+    SYSROOT_LDFLAGS+=-L$(sysroot)$(strip $(pkglibdir))
+  endif
+  ifneq ($(destdir),)
+    SYSROOT_CFLAGS+=-I$(destdir)$(strip $(includedir))
+    SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(libdir))
+    SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(pkglibdir))
+  endif
+endif
+
 #CFLAGS+=$(foreach macro,$(DIRECTORIES_LIST),-D$(macro)=\"$($(macro))\")
 LIBRARY+=
 LDFLAGS+=
@@ -227,27 +243,6 @@ LDFLAGS+=
 GCOV_CFLAGS:=--coverage -fprofile-arcs -ftest-coverage
 GCOV_LDFLAGS:=--coverage -fprofile-arcs -ftest-coverage
 GCOV_LIBS:=gcov
-
-ifneq ($(strip $(includedir)),)
-SYSROOT_CFLAGS+=-I$(TARGETPATHPREFIX)$(strip $(includedir))
-ifneq ($(destdir),)
-SYSROOT_CFLAGS+=-I$(destdir)$(strip $(includedir))
-endif
-endif
-ifneq ($(strip $(libdir)),)
-RPATHFLAGS+=-Wl,-rpath,$(strip $(libdir))
-SYSROOT_LDFLAGS+=-L$(TARGETPATHPREFIX)$(strip $(libdir))
-ifneq ($(destdir),)
-SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(libdir))
-endif
-endif
-ifneq ($(strip $(pkglibdir)),)
-RPATHFLAGS+=-Wl,-rpath,$(strip $(pkglibdir))
-SYSROOT_LDFLAGS+=-L$(TARGETPATHPREFIX)$(strip $(pkglibdir))
-ifneq ($(destdir),)
-SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(pkglibdir))
-endif
-endif
 
 INTERN_CFLAGS=-I.
 INTERN_CXXFLAGS=-I.
@@ -421,7 +416,7 @@ targets+=$(pkgconfig-target)
 hook-targets:=$(hook-$(action:_%=%)) $(hook-$(action:_%=%)-y)
 
 ifneq ($(CROSS_COMPILE),)
-destdir?=$(sysroot:"%"=%)
+  destdir?=$(sysroot)
 endif
 ##
 # install recipes generation
@@ -567,25 +562,25 @@ quiet_cmd_lex_l=LEX $*
 quiet_cmd_yacc_y=YACC $*
  cmd_yacc_y=$(YACC) $($*_YACCFLAGS) -o $@ $<
 quiet_cmd_as_o_s=AS $*
- cmd_as_o_s=$(TARGETAS) $(ASFLAGS) $(INTERN_CFLAGS) $($*_CFLAGS) $(if $(SYSROOT),$(SYSROOT_CFLAGS)) -c -o $@ $<
+ cmd_as_o_s=$(TARGETAS) $(ASFLAGS) $(INTERN_CFLAGS) $(SYSROOT_CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_cc_o_c=CC $*
- cmd_cc_o_c=$(TARGETCC) $(CFLAGS) $(INTERN_CFLAGS) $($*_CFLAGS) $(SYSROOT_CFLAGS) -c -o $@ $<
+ cmd_cc_o_c=$(TARGETCC) $(CFLAGS) $(INTERN_CFLAGS) $(SYSROOT_CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cc_gcov_c=GCOV $*
  cmd_cc_gcov_c=$(TARGETGCOV) -p $<
 quiet_cmd_cc_o_cpp=CXX $*
- cmd_cc_o_cpp=$(TARGETCXX) $(CXXFLAGS) $(CFLAGS) $(INTERN_CFLAGS) $($*_CXXFLAGS) $($*_CFLAGS) $(if $(SYSROOT),$(SYSROOT_CFLAGS)) -c -o $@ $<
+ cmd_cc_o_cpp=$(TARGETCXX) $(CXXFLAGS) $(CFLAGS) $(INTERN_CFLAGS) $(SYSROOT_CFLAGS) $($*_CXXFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_moc_hpp=QTMOC $*
  cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) -o $@ $<
 quiet_cmd_uic_hpp=QTUIC $*
  cmd_uic_hpp=$(UIC) $< > $@
 quiet_cmd_ld_bin=LD $*
- cmd_ld_bin=$(TARGETCC) $(LDFLAGS) $(INTERN_LDFLAGS) $($*_LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -o $@ $(filter %.o,$(filter-out $(file),$^)) -Wl,--start-group $(LIBS:%=-l%) $($*_LIBS:%=-l%) -Wl,--end-group -lc
+ cmd_ld_bin=$(TARGETCC) $(LDFLAGS) $(INTERN_LDFLAGS) $(SYSROOT_LDFLAGS) $($*_LDFLAGS) $(RPATHFLAGS) -o $@ $(filter %.o,$(filter-out $(file),$^)) -Wl,--start-group $(LIBS:%=-l%) $($*_LIBS:%=-l%) -Wl,--end-group -lc
 quiet_cmd_ld_slib=LD $*
  cmd_ld_slib=$(RM) $@ && \
 	$(TARGETAR) -cvq $@ $^ > /dev/null && \
 	$(TARGETRANLIB) $@
 quiet_cmd_ld_dlib=LD $*
- cmd_ld_dlib=$(TARGETCC) $(LDFLAGS) $(INTERN_LDFLAGS) $($*_LDFLAGS) $(if $(SYSROOT),$(SYSROOT_LDFLAGS)) $(RPATHFLAGS) -Bdynamic -shared -o $@ $(filter %.o,$(filter-out $(file),$^)) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
+ cmd_ld_dlib=$(TARGETCC) $(LDFLAGS) $(INTERN_LDFLAGS) $(SYSROOT_LDFLAGS) $($*_LDFLAGS) $(RPATHFLAGS) -Bdynamic -shared -o $@ $(filter %.o,$(filter-out $(file),$^)) $(LIBS:%=-l%) $($*_LIBS:%=-l%) -lc
 
 quiet_cmd_hostcc_o_c=HOSTCC $*
  cmd_hostcc_o_c=$(HOSTCC) $(HOSTCFLAGS) $(INTERN_CFLAGS) $($*_CFLAGS) -c -o $@ $<
