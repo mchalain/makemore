@@ -89,7 +89,8 @@ ifneq ($(builddir),)
 else
   obj=
 endif
-hostobj:=$(builddir)host/$(cwdir)
+hostbuilddir:=$(builddir)host/
+hostobj:=$(hostbuilddir)$(cwdir)
 
 PATH:=$(value PATH):$(hostobj)
 TMPDIR:=/tmp
