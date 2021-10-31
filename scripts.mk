@@ -806,11 +806,11 @@ $(gitclone-target): %:
 ###############################################################################
 # Project configuration
 #
-NO$(CONFIG):
+$(CONFIG):
 	$(warning "Configure the project first")
 	$(warning "  make <...>_defconfig")
 	$(warning "  make defconfig")
-	$(warning "  make config")
+	$(warning "  ./configure")
 	$(error  )
 
 define config_h_line
@@ -862,7 +862,7 @@ cmd_oldconfig=cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFI
 ##
 # config rules
 ##
-$(CONFIGFILE): $(builddir)
+$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(builddir)
 	@$(call cmd,generate_config_h)
 
 $(VERSIONFILE): $(builddir)
