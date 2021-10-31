@@ -466,7 +466,7 @@ _gcov: build:=$(action) -f $(srcdir)$(makemore) file
 _gcov: _info $(subdir-target) $(gcov-target)
 	@:
 
-_configbuild: $(obj) $(CONFIGFILE)
+_configbuild: $(obj) $(if $(wildcard $(DEFCONFIG)),$(CONFIGFILE))
 _versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 
 _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(doc-y) $(targets) _hook
