@@ -123,6 +123,7 @@ LD?=gcc
 LDFLAGS?=
 AR?=ar
 RANLIB?=ranlib
+STRIP?=strip
 GCOV?=gcov
 HOSTCC?=$(CC)
 HOSTCXX?=$(CXX)
@@ -144,6 +145,7 @@ TARGETAS:=$(AS)
 TARGETCXX:=$(CXX)
 TARGETAR:=$(AR)
 TARGETRANLIB:=$(RANLIB)
+TARGETSTRIP:=$(STRIP)
 TARGETGCOV:=$(GCOV)
 
 CCVERSION:=$(shell $(TARGETCC) -v 2>&1)
@@ -164,6 +166,7 @@ TARGETAS:=$(TARGETPREFIX)$(AS)
 TARGETCXX:=$(TARGETPREFIX)$(CXX)
 TARGETAR:=$(TARGETPREFIX)$(AR)
 TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
+TARGETSTRIP:=$(TARGETPREFIX)$(STRIP)
 TARGETGCOV:=$(TARGETPREFIX)$(GCOV)
 
 ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
@@ -717,11 +720,15 @@ define cmd_install_data
 endef
 quiet_cmd_install_bin=INSTALL $*
 define cmd_install_bin
-	$(INSTALL_PROGRAM) $< $@
+	$(INSTALL_PROGRAM) $< $@;
 endef
 quiet_cmd_install_link=INSTALL $*
 define cmd_install_link
 $(eval link_dir=$(subst $(destdir),,$(if $(findstring $(dir $(3)),./),$(dir $2),$(dir $3)))) $(MKDIR) $(destdir)$(link_dir) && cd $(destdir)$(link_dir) && $(LN) $(subst $(destdir),,$(subst $(link_dir),,$2)) $(subst $(destdir)$(link_dir),,$3)
+endef
+quiet_cmd_strip_bin=STRIP $*
+define cmd_strip_bin
+	$(TARGETSTRIP) $@;
 endef
 
 ##
@@ -748,28 +755,34 @@ $(doc-install): $(destdir)$(docdir:%/=%)/%: %
 
 $(lib-static-install): $(destdir)$(libdir:%/=%)/lib%$(slib-ext:%=.%): $(obj)lib%$(slib-ext:%=.%)
 	@$(call cmd,install_bin)
+	@$(if $(findstring 1, $S),$(call cmd,strip_bin))
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(lib-dynamic-install): $(destdir)$(libdir:%/=%)/lib%$(dlib-ext:%=.%)$(version:%=.%): $(obj)lib%$(dlib-ext:%=.%)
 	@$(call cmd,install_bin)
+	@$(if $(findstring 1, $S),$(call cmd,strip_bin))
 	@$(if $(version_m),$(call cmd,install_link,$@,$(@:%.$(version)=%.$(version_m))))
 	@$(if $(version_m),$(call cmd,install_link,$(@:%.$(version)=%.$(version_m)),$(@:%.$(version)=%)))
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(modules-install): $(destdir)$(pkglibdir:%/=%)/%$(dlib-ext:%=.%): $(obj)%$(dlib-ext:%=.%)
 	@$(call cmd,install_bin)
+	@$(if $(findstring 1, $S),$(call cmd,strip_bin))
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(bin-install): $(destdir)$(bindir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-ext:%=.%)
 	@$(call cmd,install_bin)
+	@$(if $(findstring 1, $S),$(call cmd,strip_bin))
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(sbin-install): $(destdir)$(sbindir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-ext:%=.%)
 	@$(call cmd,install_bin)
+	@$(if $(findstring 1, $S),$(call cmd,strip_bin))
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(libexec-install): $(destdir)$(libexecdir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-ext:%=.%)
 	@$(call cmd,install_bin)
+	@$(if $(findstring 1, $S),$(call cmd,strip_bin))
 	@$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
 $(pkgconfig-install): $(destdir)$(libdir:%/=%)/pkgconfig/%.pc: $(builddir)%.pc
