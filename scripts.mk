@@ -1,6 +1,6 @@
 MAKEFLAGS+=--no-print-directory
 ifeq ($(inside_makemore),)
-makemore?=$(word 2,$(MAKEFILE_LIST))
+makemore?=$(realpath $(word 2,$(MAKEFILE_LIST)))
 export makemore
 file?=$(notdir $(firstword $(MAKEFILE_LIST)))
 inside_makemore:=yes
@@ -451,7 +451,7 @@ dev-install-$(DEVINSTALL)+=$(pkgconfig-install)
 # main entries
 ##
 action:=_build
-build:=$(action) -f $(srcdir)$(makemore) file
+build:=$(action) -f $(makemore) file
 .DEFAULT_GOAL:=build
 .PHONY: _build _install _clean _distclean _check _hostbuild
 .PHONY: build install clean distclean check hosttools
@@ -461,12 +461,12 @@ _info:
 	@:
 
 _hostbuild: action:=_hostbuild
-_hostbuild: build:=$(action) -f $(srcdir)$(makemore) file
+_hostbuild: build:=$(action) -f $(makemore) file
 _hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target) _hook
 	@:
 
 _gcov: action:=_gcov
-_gcov: build:=$(action) -f $(srcdir)$(makemore) file
+_gcov: build:=$(action) -f $(makemore) file
 _gcov: _info $(subdir-target) $(gcov-target)
 	@:
 
@@ -477,12 +477,12 @@ _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) 
 	@:
 
 _install: action:=_install
-_install: build:=$(action) -f $(srcdir)$(makemore) file
+_install: build:=$(action) -f $(makemore) file
 _install: _info $(install) $(dev-install-y) $(subdir-target) _hook
 	@:
 
 _clean: action:=_clean
-_clean: build:=$(action) -f $(srcdir)$(makemore) file
+_clean: build:=$(action) -f $(makemore) file
 _clean: _info $(subdir-target) _clean_objs _clean_targets _clean_objdirs _hook
 	@:
 
@@ -501,7 +501,7 @@ _clean_objdirs:
 	@$(if $(target-hostobjs),$(call cmd,clean_dir,$(wildcard $(realpath $(hostobj)))))
 
 _check: action:=_check
-_check: build:=$(action) -s -f $(srcdir)$(makemore) file
+_check: build:=$(action) -s -f $(makemore) file
 _check: $(subdir-target) $(lib-check-target)
 
 _hook:
@@ -509,11 +509,11 @@ _hook:
 
 PHONY:clean distclean install check default_action pc all
 clean: action:=_clean
-clean: build:=$(action) -f $(srcdir)$(makemore) file
+clean: build:=$(action) -f $(makemore) file
 clean: default_action ;
 
 distclean: action:=_clean
-distclean: build:=$(action) -f $(srcdir)$(makemore) file
+distclean: build:=$(action) -f $(makemore) file
 distclean: default_action cleanconfig
 	@$(call cmd,clean_dir,$(wildcard $(builddir)host))
 	@$(call cmd,clean_dir,$(filter-out $(srcdir),$(builddir)))
@@ -522,19 +522,19 @@ distclean: default_action cleanconfig
 	@$(call cmd,clean,$(wildcard $(builddir).*.pc.in))
 
 install:: action:=_install
-install:: build:=$(action) -f $(srcdir)$(makemore) file
+install:: build:=$(action) -f $(makemore) file
 install:: _configbuild _versionbuild default_action ;
 
 check: action:=_check
-check: build:=$(action) -s -f $(srcdir)$(makemore) file
+check: build:=$(action) -s -f $(makemore) file
 check: $(.DEFAULT_GOAL) ;
 
 hosttools: action:=_hostbuild
-hosttools: build:=$(action) -f $(srcdir)$(makemore) file
+hosttools: build:=$(action) -f $(makemore) file
 hosttools: default_action ;
 
 gcov: action:=_gcov
-gcov: build:=$(action) -f $(srcdir)$(makemore) file
+gcov: build:=$(action) -f $(makemore) file
 gcov: default_action ;
 
 default_action: _info
