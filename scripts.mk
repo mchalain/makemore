@@ -452,9 +452,10 @@ dev-install-$(DEVINSTALL)+=$(pkgconfig-install)
 ##
 action:=_build
 build:=$(action) -f $(srcdir)$(makemore) file
-.DEFAULT_GOAL:=_entry
-.PHONY:_entry _build _install _clean _distclean _check _hostbuild
-_entry: _configbuild _versionbuild default_action
+.DEFAULT_GOAL:=build
+.PHONY: _build _install _clean _distclean _check _hostbuild
+.PHONY: build install clean distclean check hosttools
+build: _configbuild _versionbuild default_action
 
 _info:
 	@:
