@@ -391,10 +391,6 @@ subdir-y:=$(filter-out $(subdir-project),$(subdir-y))
 #append Makefile to each directory and only directory subdir
 subdir-target:=$(foreach sdir,$(subdir-y),$(if $(filter-out %$(makefile-ext:%=.%), $(filter-out %Makefile, $(sdir))),$(wildcard $(addsuffix /Makefile,$(sdir:%/.=%))),$(wildcard $(sdir))))
 
-
-#download-target+=$(foreach dl,$(download-y),$(DL)/$(dl)/$($(dl)_SOURCE))
-$(foreach dl,$(download-y),$(if $(findstring git,$($(dl)_SITE_METHOD)),$(eval gitclone-target+=$(dl)),$(eval download-target+=$(dl))))
-
 pkgconfig-target:=$(foreach pkgconfig,$(sort $(pkgconfig-y)),$(addprefix $(builddir),$(addsuffix .pc,$(pkgconfig))))
 lib-pkgconfig-target:=$(sort $(foreach lib,$(sort $(lib-y) $(slib-y)),$(addprefix $(builddir).,$(addsuffix .pc.in,$($(lib)_PKGCONFIG)))))
 
@@ -446,6 +442,13 @@ install+=$(bin-install)
 install+=$(sbin-install)
 install+=$(libexec-install)
 dev-install-$(DEVINSTALL)+=$(pkgconfig-install)
+
+###############################################################################
+# scripts extensions
+##
+ifneq ($(wildcard $(dir $(makemore))scripts/download.mk),)
+  include $(dir $(makemore))scripts/download.mk
+endif
 
 ###############################################################################
 # main entries
@@ -788,38 +791,6 @@ $(libexec-install): $(destdir)$(libexecdir:%/=%)/%$(bin-ext:%=.%): $(obj)%$(bin-
 
 $(pkgconfig-install): $(destdir)$(libdir:%/=%)/pkgconfig/%.pc: $(builddir)%.pc
 	@$(call cmd,install_data)
-
-###############################################################################
-# Commands for download
-##
-DL?=$(srcdir)/.dl
-
-quiet_cmd_download=DOWNLOAD $*
-define cmd_download
-	wget -q -O $(OUTPUT) $(URL)
-endef
-
-quiet_cmd_gitclone=CLONE $*
-define cmd_gitclone
-	$(if $(wildcard $(OUTPUT)),,git clone --depth 1 $(URL) $(VERSION) $(OUTPUT))
-endef
-
-$(DL)/:
-	$(MKDIR) $@
-
-$(download-target): %: $(DL)/
-	$(eval URL=$($*_SITE)/$($*_SOURCE))
-	$(eval DL=$(realpath $(DL)))
-	$(eval OUTPUT=$(DL)/$($*_SOURCE))
-	@$(call cmd,download)
-	@$(if $(findstring .zip, $($*_SOURCE)),unzip -o -d $(cwdir)/$* $(OUTPUT))
-	@$(if $(findstring .tar.gz, $($*_SOURCE)),tar -xzf $(OUTPUT) -C $(cwdir)/$*)
-
-$(gitclone-target): %:
-	$(eval URL=$($*_SITE))
-	$(eval OUTPUT=$(cwdir)/$*)
-	$(eval VERSION=$(if $($*_VERSION),-b $($*_VERSION)))
-	@$(call cmd,gitclone)
 
 ###############################################################################
 # Project configuration
