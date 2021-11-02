@@ -447,6 +447,10 @@ ifneq ($(wildcard $(dir $(makemore))scripts/qt.mk),)
   include $(dir $(makemore))scripts/qt.mk
 endif
 
+ifneq ($(wildcard $(dir $(makemore))scripts/gcov.mk),)
+  include $(dir $(makemore))scripts/gcov.mk
+endif
+
 ###############################################################################
 # main entries
 ##

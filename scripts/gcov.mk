@@ -1,4 +1,6 @@
 TARGETGCOV:=$(TARGETPREFIX)$(GCOV)
+LCOV=lcov
+GENHTML=genhtml
 
 ifeq ($(G),1)
 INTERN_CFLAGS+=--coverage -fprofile-arcs -ftest-coverage
@@ -18,8 +20,14 @@ gcov: action:=_gcov
 gcov: build:=$(action) -f $(makemore) file
 gcov: default_action ;
 
+gcovhtml: $(builddir)gcov_report
+
 quiet_cmd_cc_gcov_c=GCOV $*
  cmd_cc_gcov_c=$(TARGETGCOV) -o $(obj) -s $(src) -p $< -t > $@;
+quiet_cmd_lcov=LCOV
+ cmd_lcov=$(LCOV) --directory $(builddir) --capture --output-file $@
+quiet_cmd_genhtml=GENHTML $@
+ cmd_genhtml=$(GENHTML) $< --output-directory $@
 
 $(obj)%.c.gcov:%.c $(file)
 	@$(call cmd,cc_gcov_c)
@@ -33,3 +41,9 @@ $(obj)%.c.gcov:$(obj)%.c $(file)
 
 $(obj)%.c.gcov:$(obj)%.cpp $(file)
 	@$(call cmd,cc_gcov_c)
+
+$(builddir)gcov.info: $(gcov-target)
+	@$(call cmd,lcov)
+
+$(builddir)gcov_report: $(builddir)gcov.info
+	@$(call cmd,genhtml)
