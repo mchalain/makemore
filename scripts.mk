@@ -280,6 +280,14 @@ endef
 define src2obj
 $(call ass2obj,$(call c2obj,$1))
 endef
+
+###############################################################################
+# scripts extensions
+##
+ifneq ($(wildcard $(dir $(makemore))scripts/download.mk),)
+  include $(dir $(makemore))scripts/download.mk
+endif
+
 ##
 # objects recipes generation
 ##
@@ -444,13 +452,6 @@ install+=$(bin-install)
 install+=$(sbin-install)
 install+=$(libexec-install)
 dev-install-$(DEVINSTALL)+=$(pkgconfig-install)
-
-###############################################################################
-# scripts extensions
-##
-ifneq ($(wildcard $(dir $(makemore))scripts/download.mk),)
-  include $(dir $(makemore))scripts/download.mk
-endif
 
 ###############################################################################
 # main entries
