@@ -146,7 +146,6 @@ TARGETCXX:=$(CXX)
 TARGETAR:=$(AR)
 TARGETRANLIB:=$(RANLIB)
 TARGETSTRIP:=$(STRIP)
-TARGETGCOV:=$(GCOV)
 
 CCVERSION:=$(shell $(TARGETCC) -v 2>&1)
 ifneq ($(dir $(TARGETCC)),./)
@@ -167,7 +166,6 @@ TARGETCXX:=$(TARGETPREFIX)$(CXX)
 TARGETAR:=$(TARGETPREFIX)$(AR)
 TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
 TARGETSTRIP:=$(TARGETPREFIX)$(STRIP)
-TARGETGCOV:=$(TARGETPREFIX)$(GCOV)
 
 ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
 ifeq ($(libdir),)
@@ -182,6 +180,7 @@ ifeq ($(libdir),)
   endif
 endif
 
+O?=2
 ifeq ($(CC),gcc)
   SYSROOT=$(shell $(TARGETCC) -print-sysroot)
 endif
@@ -313,15 +312,6 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(ev
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBS:=$($(t)_LIBS) $($(t)_LIBS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_LIBRARY:=$($(t)_LIBRARY) $($(t)_LIBRARY-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_MOCFLAGS:=$($(t)_MOCFLAGS) $($(t)_MOCFLAGS-y)))
-
-O?=2
-ifeq ($(G),1)
-INTERN_CFLAGS+=--coverage -fprofile-arcs -ftest-coverage
-INTERN_LDFLAGS+=--coverage -fprofile-arcs -ftest-coverage
-INTERN_LIBS+=gcov
-O:=0
-endif
-gcov-target:=$(target-objs:%.o=%.gcov)
 
 CFLAGS+=-O$(O)
 
@@ -475,11 +465,6 @@ _hostbuild: build:=$(action) -f $(makemore) file
 _hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target) _hook
 	@:
 
-_gcov: action:=_gcov
-_gcov: build:=$(action) -f $(makemore) file
-_gcov: _info $(subdir-target) $(gcov-target)
-	@:
-
 _configbuild: $(obj) $(if $(wildcard $(DEFCONFIG)),$(CONFIGFILE))
 _versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 
@@ -543,10 +528,6 @@ hosttools: action:=_hostbuild
 hosttools: build:=$(action) -f $(makemore) file
 hosttools: default_action ;
 
-gcov: action:=_gcov
-gcov: build:=$(action) -f $(makemore) file
-gcov: default_action ;
-
 default_action: _info
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
@@ -573,8 +554,6 @@ quiet_cmd_as_o_s=AS $*
  cmd_as_o_s=$(TARGETAS) $(ASFLAGS) $(INTERN_CFLAGS) $(SYSROOT_CFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_cc_o_c=CC $*
  cmd_cc_o_c=$(TARGETCC) $(CFLAGS) $(INTERN_CFLAGS) $(SYSROOT_CFLAGS) $($*_CFLAGS) -c -o $@ $<
-quiet_cc_gcov_c=GCOV $*
- cmd_cc_gcov_c=$(TARGETGCOV) -p $<
 quiet_cmd_cc_o_cpp=CXX $*
  cmd_cc_o_cpp=$(TARGETCXX) $(CXXFLAGS) $(CFLAGS) $(INTERN_CFLAGS) $(SYSROOT_CFLAGS) $($*_CXXFLAGS) $($*_CFLAGS) -c -o $@ $<
 quiet_cmd_ld_bin=LD $*
@@ -627,9 +606,6 @@ $(obj)%.o:$(obj)%.cpp $(file)
 
 $(obj)%.o:%.cpp $(file)
 	@$(call cmd,cc_o_cpp)
-
-$(obj)%.gcov:%.c $(file)
-	@$(call cmd,cc_gcov_c)
 
 $(hostobj)%.o:$(hostobj)%.c $(file)
 	@$(call cmd,hostcc_o_c)
