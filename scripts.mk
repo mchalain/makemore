@@ -696,23 +696,22 @@ $(subdir-target): %: FORCE
 #
 quiet_cmd_check_lib=CHECK $*
 define cmd_check_lib
-	$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
-	echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
 	$(eval CHECKLIB=$(firstword $(subst {, ,$(subst },,$2))))
 	$(eval CHECKVERSION=$(if $(findstring {, $(2)),$(subst -, - ,$(lastword $(subst {, ,$(subst },,$2))))))
 	$(eval CHECKOPTIONS=$(if $(CHECKVERSION),$(if $(findstring -,$(firstword $(CHECKVERSION))),--max-version=$(word 2,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(lastword $(CHECKVERSION))),--atleast-version=$(word 1,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(CHECKVERSION)),,--exact-version=$(CHECKVERSION))))
-	$(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB)
+	$(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB);
 	$(eval CHECKCFLAGS:=$(call cmd_pkgconfig,$(CHECKLIB),--cflags))
 	$(eval CHECKLDFLAGS:=$(call cmd_pkgconfig,$(CHECKLIB),--libs))
-	$(TARGETCC) -c -o $(TMPDIR)/$(TESTFILE:%=%.o) $(TMPDIR)/$(TESTFILE:%=%.c) $(INTERN_CFLAGS) $(CHECKCFLAGS) > /dev/null 2>&1
-	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(TMPDIR)/$(TESTFILE:%=%.o) $(INTERN_LDFLAGS) $(CHECKLDFLAGS) > /dev/null 2>&1
+	$(TARGETCC) -c -o $(<:%.c=%.o) $< $(INTERN_CFLAGS) $(CHECKCFLAGS);
+	$(TARGETLD) -o $(TMPDIR)/$(TESTFILE) $(<:%.c=%.o) $(INTERN_LDFLAGS) $(CHECKLDFLAGS) > /dev/null 2>&1
 endef
 
-$(lib-check-target): check_%:
-	$(Q)$(RM) $(TMPDIR)/$(TESTFILE:%=%.c) $(TMPDIR)/$(TESTFILE)
-	$(Q)echo "int main(){}" > $(TMPDIR)/$(TESTFILE:%=%.c)
+$(TMPDIR)/$(TESTFILE:%=%.c):
+	$(Q)echo "int main(){return 0;}" > $@
+	
+$(lib-check-target): check_%: $(TMPDIR)/$(TESTFILE:%=%.c)
 	$(Q)$(call cmd,check_lib,$*)
 
 ###############################################################################
