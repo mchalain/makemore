@@ -281,17 +281,6 @@ define src2obj
 $(call ass2obj,$(call c2obj,$1))
 endef
 
-###############################################################################
-# scripts extensions
-##
-ifneq ($(wildcard $(dir $(makemore))scripts/download.mk),)
-  include $(dir $(makemore))scripts/download.mk
-endif
-
-ifneq ($(wildcard $(dir $(makemore))scripts/qt.mk),)
-  include $(dir $(makemore))scripts/qt.mk
-endif
-
 ##
 # objects recipes generation
 ##
@@ -356,10 +345,10 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(
 
 # set the CFLAGS of each source file
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.c,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
-
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.c,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
+
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CXXFLAGS+=$($(t)_CXXFLAGS)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CXXFLAGS+=$($(t)_CXXFLAGS)))))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LDFLAGS+=$($(patsubst %.c,%,$(s))_LDFLAGS)))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LDFLAGS+=$($(patsubst %.cpp,%,$(s))_LDFLAGS)))))
@@ -418,7 +407,7 @@ targets+=$(bin-target)
 targets+=$(lib-pkgconfig-target)
 targets+=$(pkgconfig-target)
 
-hook-targets:=$(hook-$(action:_%=%)) $(hook-$(action:_%=%)-y)
+hook-target:=$(hook-$(action:_%=%)) $(hook-$(action:_%=%)-y)
 
 ifneq ($(CROSS_COMPILE),)
   destdir?=$(sysroot)
@@ -454,6 +443,19 @@ install+=$(bin-install)
 install+=$(sbin-install)
 install+=$(libexec-install)
 dev-install-$(DEVINSTALL)+=$(pkgconfig-install)
+
+###############################################################################
+# scripts extensions
+# target-objs must be ready before extensions
+# the extensions may rework the target-objs and other variables
+##
+ifneq ($(wildcard $(dir $(makemore))scripts/download.mk),)
+  include $(dir $(makemore))scripts/download.mk
+endif
+
+ifneq ($(wildcard $(dir $(makemore))scripts/qt.mk),)
+  include $(dir $(makemore))scripts/qt.mk
+endif
 
 ###############################################################################
 # main entries
