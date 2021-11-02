@@ -3,8 +3,6 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(h
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(addprefix $(obj),$(patsubst %.ui,%.ui.hpp,$(filter %.ui,$($(t)_QTOBJECTS) $($(t)_QTOBJECTS-y))))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(addprefix $(obj),$(patsubst %.ui,%.moc.cpp,$(filter %.ui,$($(t)_QTOBJECTS) $($(t)_QTOBJECTS-y))))))
 
-$(warning $(target-objs))
-
 quiet_cmd_moc_hpp=QTMOC $*
  cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) -o $@ $<
 quiet_cmd_uic_hpp=QTUIC $*
