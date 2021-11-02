@@ -288,6 +288,10 @@ ifneq ($(wildcard $(dir $(makemore))scripts/download.mk),)
   include $(dir $(makemore))scripts/download.mk
 endif
 
+ifneq ($(wildcard $(dir $(makemore))scripts/qt.mk),)
+  include $(dir $(makemore))scripts/qt.mk
+endif
+
 ##
 # objects recipes generation
 ##
@@ -296,8 +300,6 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(h
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)_SOURCES),,$(if $(wildcard $(src)$(t).c),$(eval $(t)_SOURCES+=$(t).c))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)_SOURCES),,$(if $(wildcard $(src)$(t).cpp),$(eval $(t)_SOURCES+=$(t).cpp))))
 
-## Qt support
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(addprefix $(obj),$(patsubst %.hpp,%.moc.cpp,$(filter %.hpp,$($(t)_QTOBJECTS) $($(t)_QTOBJECTS-y))))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $(findstring .cpp, $(notdir $($(t)_SOURCES))), $(eval $(t)_LIBS+=stdc++)))
 
 ## lex sources substituded to lexer.c files for targets
@@ -573,10 +575,6 @@ quiet_cc_gcov_c=GCOV $*
  cmd_cc_gcov_c=$(TARGETGCOV) -p $<
 quiet_cmd_cc_o_cpp=CXX $*
  cmd_cc_o_cpp=$(TARGETCXX) $(CXXFLAGS) $(CFLAGS) $(INTERN_CFLAGS) $(SYSROOT_CFLAGS) $($*_CXXFLAGS) $($*_CFLAGS) -c -o $@ $<
-quiet_cmd_moc_hpp=QTMOC $*
- cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) -o $@ $<
-quiet_cmd_uic_hpp=QTUIC $*
- cmd_uic_hpp=$(UIC) $< > $@
 quiet_cmd_ld_bin=LD $*
  cmd_ld_bin=$(TARGETCC) $(LDFLAGS) $(INTERN_LDFLAGS) $(SYSROOT_LDFLAGS) $($*_LDFLAGS) $(RPATHFLAGS) -o $@ $(filter %.o,$(filter-out $(file),$^)) -Wl,--start-group $(LIBS:%=-l%) $($*_LIBS:%=-l%) -Wl,--end-group $(INTERN_LIBS:%=-l%)
 quiet_cmd_ld_slib=LD $*
@@ -630,15 +628,6 @@ $(obj)%.o:%.cpp $(file)
 
 $(obj)%.gcov:%.c $(file)
 	@$(call cmd,cc_gcov_c)
-
-$(obj)%.moc.cpp:$(obj)%.ui.hpp $(file)
-	@$(call cmd,moc_hpp)
-
-$(obj)%.moc.cpp:%.hpp $(file)
-	@$(call cmd,moc_hpp)
-
-$(obj)%.ui.hpp:%.ui $(file)
-	@$(call cmd,uic_hpp)
 
 $(hostobj)%.o:$(hostobj)%.c $(file)
 	@$(call cmd,hostcc_o_c)
