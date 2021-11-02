@@ -283,30 +283,30 @@ endef
 ##
 # objects recipes generation
 ##
-## Qt support
 #$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES:=$(sort $($(t)_SOURCES) $($(t)_SOURCES-y))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES+=$($(t)_SOURCES-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)_SOURCES),,$(if $(wildcard $(src)$(t).c),$(eval $(t)_SOURCES+=$(t).c))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)_SOURCES),,$(if $(wildcard $(src)$(t).cpp),$(eval $(t)_SOURCES+=$(t).cpp))))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(patsubst %.hpp,%.moc.cpp,$($(t)_QTHEADERS) $($(t)_QTHEADERS-y))))
+## Qt support
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(addprefix $(obj),$(patsubst %.hpp,%.moc.cpp,$($(t)_QTHEADERS) $($(t)_QTHEADERS-y)))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $(findstring .cpp, $(notdir $($(t)_SOURCES))), $(eval $(t)_LIBS+=stdc++)))
 
 ## lex sources substituded to lexer.c files for targets
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(patsubst %.l,%.lexer.c,$(filter %.l,$($(t)_SOURCES)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(addprefix $(obj),$(patsubst %.l,%.lexer.c,$(filter %.l,$($(t)_SOURCES))))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES:=$(filter-out %.l,$($(t)_SOURCES))))
 
 ## yacc sources substituded to tab.c files for targets
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(patsubst %.y,%.tab.c,$(filter %.y,$($(t)_SOURCES)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(addprefix $(obj),$(patsubst %.y,%.tab.c,$(filter %.y,$($(t)_SOURCES))))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES:=$(filter-out %.y,$($(t)_SOURCES))))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$($(t)_GENERATED)))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(call src2obj,$($(t)_GENERATED))))
+#$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$($(t)_GENERATED)))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(call src2obj,$(notdir $($(t)_GENERATED)))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(call src2obj,$($(t)_SOURCES))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)-objs),,$(eval $(t)-objs+=$(t))))
 
-target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(addprefix $(obj),    $($(t)-objs)))
-target-hostobjs:=$(foreach t, $(hostbin-y) $(hostslib-y),                    $(addprefix $(hostobj),$($(t)-objs)))
+target-objs:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_GENERATED) $(addprefix $(obj),    $($(t)-objs)))
+target-hostobjs:=$(foreach t, $(hostbin-y) $(hostslib-y),                    $($(t)_GENERATED) $(addprefix $(hostobj),$($(t)-objs)))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS:=$($(t)_CFLAGS) $($(t)_CFLAGS-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CXXFLAGS:=$($(t)_CXXFLAGS) $($(t)_CXXFLAGS-y)))
@@ -670,6 +670,9 @@ $(hostbin-target): $(hostobj)%$(bin-ext:%=.%): $$(addprefix $(hostobj),$$(%-objs
 
 $(hostslib-target): $(hostobj)lib%$(slib-ext:%=.%): $$(addprefix $(hostobj),$$(%-objs)) $(file)
 	@$(call cmd,hostld_slib)
+
+# this line is for <target>_GENERATED variable
+%: ;
 
 ###############################################################################
 # subdir evaluation
