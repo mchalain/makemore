@@ -147,7 +147,7 @@ TARGETAR:=$(AR)
 TARGETRANLIB:=$(RANLIB)
 TARGETSTRIP:=$(STRIP)
 
-CCVERSION:=$(shell $(TARGETCC) -v 2>&1)
+CCVERSION:=$(shell $(TARGETCC) -### 2>&1 | ${GREP} -i " version ")
 ifneq ($(dir $(TARGETCC)),./)
 	TARGETPREFIX=
 else
