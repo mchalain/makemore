@@ -243,6 +243,9 @@ ifneq ($(sysroot),)
     SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(libdir))
     SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(pkglibdir))
   endif
+  PKG_CONFIG_PATH=""
+  PKG_CONFIG_SYSROOT_DIR=$(sysroot)
+  export PKG_CONFIG_SYSROOT_DIR PKG_CONFIG_DIR
 endif
 
 INTERN_CFLAGS=-I.
@@ -325,7 +328,7 @@ CFLAGS+=-O$(O)
 $(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
 define cmd_pkgconfig
-	$(shell $(PKGCONFIG) --silence-errors $(2) $(1))
+	$(shell PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config $(PKGCONFIG) --silence-errors $(2) $(1))
 endef
 # LIBRARY may contain libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
@@ -685,7 +688,7 @@ define cmd_check_lib
 	$(eval CHECKOPTIONS=$(if $(CHECKVERSION),$(if $(findstring -,$(firstword $(CHECKVERSION))),--max-version=$(word 2,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(lastword $(CHECKVERSION))),--atleast-version=$(word 1,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(CHECKVERSION)),,--exact-version=$(CHECKVERSION))))
-	$(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB);
+	PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config $(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB);
 	$(eval CHECKCFLAGS:=$(call cmd_pkgconfig,$(CHECKLIB),--cflags))
 	$(eval CHECKLDFLAGS:=$(call cmd_pkgconfig,$(CHECKLIB),--libs))
 	$(TARGETCC) -c -o $(<:%.c=%.o) $< $(INTERN_CFLAGS) $(CHECKCFLAGS);
