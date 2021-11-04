@@ -115,50 +115,58 @@ UIC?=uic$(QT:%=-%)
 
 TOOLCHAIN?=
 CROSS_COMPILE?=
-CC?=gcc
-CFLAGS?=
-CXX?=g++
-CXXFLAGS?=
-LD?=gcc
-LDFLAGS?=
-AR?=ar
-RANLIB?=ranlib
-STRIP?=strip
-HOSTCC?=$(CC)
-HOSTCXX?=$(CXX)
-HOSTLD?=$(LD)
-HOSTAR?=$(AR)
-HOSTRANLIB?=$(RANLIB)
-HOSTCFLAGS?=$(CFLAGS)
-HOSTLDFLAGS?=$(LDFLAGS)
 
-export PATH:=$(PATH):$(TOOLCHAIN):$(TOOLCHAIN)/bin
-# if cc is a link on gcc, prefer to use directly gcc for ld
 ifeq ($(CC),cc)
- TARGETCC:=gcc
-else
- TARGETCC:=$(CC)
+  CC:=$(realpath $(shell type $(CC)))
 endif
-TARGETLD:=$(LD)
-TARGETAS:=$(AS)
-TARGETCXX:=$(CXX)
-TARGETAR:=$(AR)
-TARGETRANLIB:=$(RANLIB)
-TARGETSTRIP:=$(STRIP)
 
-CCVERSION:=$(shell $(TARGETCC) -### 2>&1 | ${GREP} -i " version ")
-ifneq ($(dir $(TARGETCC)),./)
-	TARGETPREFIX=
-else
-	ifneq ($(CROSS_COMPILE),)
-		ifeq ($(findstring $(CROSS_COMPILE),$(TARGETCC)),)
-			TARGETPREFIX=$(CROSS_COMPILE:%-=%)-
-		endif
-	else
-		TARGETPREFIX=
-	endif
+HOSTCC=gcc
+HOSTCXX=g++
+# if gcc, prefer to use directly gcc for ld
+HOSTLD=gcc
+HOSTAR=ar
+HOSTRANLIB=ranlib
+HOSTCFLAGS=
+HOSTLDFLAGS=
+HOSTSTRIP=strip
+HOST_COMPILE:=$(shell LANG=C $(HOSTCC) -dumpmachine | $(AWK) -F- '{print $$1}')
+HOSTCCVERSION:=$(shell $(HOSTCC) -###  2>&1 | ${GREP} -i " version ")
+
+ifneq ($(CC),)
+  CCVERSION:=$(shell $(CC) -###  2>&1 | ${GREP} -i " version ")
+  ARCH:=$(shell LANG=C $(CC) -dumpmachine | $(AWK) -F- '{print $$1}')
 endif
-TARGETCC:=$(TARGETPREFIX)$(TARGETCC)
+
+ifeq ($(HOST_COMPILE),$(ARCH))
+  CC?=$(HOSTCC)
+  CFLAGS?=
+  CXX?=$(HOSTCXX)
+  CXXFLAGS?=
+  LD?=$(HOSTLD)
+  LDFLAGS?=
+  AR?=$(HOSTAR)
+  RANLIB?=$(HOSTRANLIB)
+  STRIP?=$(HOSTSTRIP)
+else
+  TOOLCHAIN?=$(dir $(dir $(realpath $(shell type $(CC)))))
+endif
+
+ifneq ($(TOOLCHAIN),)
+  export PATH:=$(PATH):$(TOOLCHAIN):$(TOOLCHAIN)/bin
+endif
+
+ifneq ($(dir $(CC)),./)
+  TARGETPREFIX=
+else
+  ifneq ($(CROSS_COMPILE),)
+    ifeq ($(findstring $(CROSS_COMPILE),$(CC)),)
+      TARGETPREFIX=$(CROSS_COMPILE:%-=%)-
+    endif
+  else
+    TARGETPREFIX=
+  endif
+endif
+TARGETCC:=$(TARGETPREFIX)$(CC)
 TARGETLD:=$(TARGETPREFIX)$(LD)
 TARGETAS:=$(TARGETPREFIX)$(AS)
 TARGETCXX:=$(TARGETPREFIX)$(CXX)
@@ -180,8 +188,8 @@ ifeq ($(libdir),)
 endif
 
 O?=2
-ifeq ($(CC),gcc)
-  SYSROOT=$(shell $(TARGETCC) -print-sysroot)
+ifeq ($(findstring gcc,$(TARGETCC)),gcc)
+  SYSROOT?=$(shell $(TARGETCC) -print-sysroot)
 endif
 
 ifneq ($(SYSROOT),)
