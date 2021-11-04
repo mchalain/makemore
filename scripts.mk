@@ -459,20 +459,20 @@ build:=$(action) -f $(makemore) file
 .DEFAULT_GOAL:=build
 .PHONY: _build _install _clean _distclean _check _hostbuild
 .PHONY: build install clean distclean check hosttools
-build: _configbuild _versionbuild default_action
+build: $(builddir) _configbuild _versionbuild default_action
 
 _info:
 	@:
 
 _hostbuild: action:=_hostbuild
 _hostbuild: build:=$(action) -f $(makemore) file
-_hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target) _hook
+_hostbuild: _info $(subdir-target) $(hostobj) $(hostslib-target) $(hostbin-target) _hook
 	@:
 
-_configbuild: $(obj) $(if $(wildcard $(DEFCONFIG)),$(CONFIGFILE))
+_configbuild: $(if $(wildcard $(DEFCONFIG)),$(CONFIGFILE))
 _versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 
-_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(doc-y) $(targets) _hook
+_build: _info $(download-target) $(gitclone-target) $(obj) $(subdir-project) $(subdir-target) $(data-y) $(doc-y) $(targets) _hook
 	@:
 
 _install: action:=_install
@@ -530,7 +530,7 @@ check: $(.DEFAULT_GOAL) ;
 
 hosttools: action:=_hostbuild
 hosttools: build:=$(action) -f $(makemore) file
-hosttools: default_action ;
+hosttools: $(hostbuilddir) default_action ;
 
 default_action: _info
 	$(Q)$(MAKE) $(build)=$(file)
@@ -827,10 +827,10 @@ cmd_oldconfig=cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFI
 ##
 # config rules
 ##
-$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(builddir)
+$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG))
 	@$(call cmd,generate_config_h)
 
-$(VERSIONFILE): $(builddir)
+$(VERSIONFILE):
 	@$(call cmd,generate_version_h)
 
 ##
@@ -883,7 +883,7 @@ configfiles+=$(wildcard $(PATHCACHE))
 cleanconfig: FORCE
 	@$(foreach file,$(configfiles), $(call cmd,clean,$(file));)
 
-$(CONFIG).old: $(wildcard $(CONFIG))
+$(CONFIG).old: $(CONFIG)
 	$(Q)$(if $<,mv $< $@)
 
 # set the list of configuration variables
@@ -893,7 +893,7 @@ UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^. .* is not set/{print $$2}')
 endif
 CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
 
-oldconfig: _info $(CONFIG) FORCE
+oldconfig: _info $(builddir) $(CONFIG) FORCE
 	@$(call cmd,clean,$(PATHCACHE))
 	$(Q)$(MAKE) _oldconfig
 
@@ -905,21 +905,21 @@ _oldconfig: $(DEFCONFIG) $(PATHCACHE)
 # 1) use the default defconfig file
 # 2) relaunch with _defconfig target
 defconfig: TMPCONFIG:=$(builddir).tmpconfig
-defconfig: _info cleanconfig FORCE
+defconfig: _info cleanconfig $(builddir) FORCE
 	$(Q)$(MAKE) TMPCONFIG=$(TMPCONFIG) _defconfig
 
 # manage the defconfig files
 # 1) set the DEFCONFIG variable
 # 2) relaunch with _defconfig target
 %_defconfig: TMPCONFIG=$(builddir).tmpconfig
-%_defconfig: $(srcdir)configs/%_defconfig _info cleanconfig
+%_defconfig: $(srcdir)configs/%_defconfig _info cleanconfig $(builddir)
 	$(Q)$(MAKE) DEFCONFIG=$< TMPCONFIG=$(TMPCONFIG) _defconfig
 
 quiet_cmd__saveconfig=DEFCONFIG $(notdir $(DEFCONFIG))
-cmd__saveconfig=printf "$(strip $(foreach config,$(CONFIGS),$(config)=$($(config))\n))" > $(CONFIG)
+cmd__saveconfig=printf "$(foreach config,$(CONFIGS),$(config)=$($(config))\n)" > $(CONFIG)
 
-$(PATHCACHE): $(builddir)
-	@printf "$(strip $(foreach config,$(PATHES),$(config)=$($(config))\n))" > $@
+$(PATHCACHE):
+	@printf "$(foreach config,$(PATHES),$(config)=$($(config))\n)" > $@
 
 ifneq ($(TMPCONFIG),)
 # create a temporary defconfig file in the format of the config file
