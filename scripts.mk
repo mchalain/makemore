@@ -112,7 +112,6 @@ LESS?=lex
 YACC?=yacc
 MOC?=moc$(QT:%=-%)
 UIC?=uic$(QT:%=-%)
-GCOV?=gcov
 
 TOOLCHAIN?=
 CROSS_COMPILE?=
