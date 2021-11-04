@@ -112,6 +112,7 @@ LESS?=lex
 YACC?=yacc
 MOC?=moc$(QT:%=-%)
 UIC?=uic$(QT:%=-%)
+GCOV?=gcov
 
 TOOLCHAIN?=
 CROSS_COMPILE?=
@@ -124,7 +125,6 @@ LDFLAGS?=
 AR?=ar
 RANLIB?=ranlib
 STRIP?=strip
-GCOV?=gcov
 HOSTCC?=$(CC)
 HOSTCXX?=$(CXX)
 HOSTLD?=$(LD)
