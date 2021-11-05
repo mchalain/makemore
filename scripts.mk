@@ -339,32 +339,26 @@ $(foreach l,$(LIBRARY),$(eval CFLAGS+=$(call cmd_pkgconfig,$(firstword $(subst {
 $(foreach l,$(LIBRARY),$(eval LDFLAGS+=$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst }, ,$(l)))), --libs-only-L) ) )
 $(foreach l,$(LIBRARY),$(eval LIBS+=$(subst -l,,$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst }, ,$(l)))), --libs-only-l)) ) )
 $(eval LIBS:=$(sort $(LIBS)))
+
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_CFLAGS+=$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst }, ,$(l)))),--cflags))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_LDFLAGS+=$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst }, ,$(l)))),--libs-only-L))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach l, $($(t)_LIBRARY),$(eval $(t)_LIBS+=$(subst -l,,$(call cmd_pkgconfig,$(firstword $(subst {, ,$(subst },,$(l)))),--libs-only-l)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(eval $(t)_LIBS:=$(sort $($(t)_LIBS))))
 
 # set the CFLAGS of each source file
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.c,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.c,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
+# if the source file name and binary name are exactly the same, a loop occures and the CFLAGS grows
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $(patsubst %.c,%,$($(t)_SOURCES)),$(if $(findstring @$(s)@,@$(t)@),,$(eval $(s)_CFLAGS+=$($(t)_CFLAGS)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $(patsubst %.c,%,$($(t)_GENERATED)),$(if $(findstring @$(s)@,@$(t)@),,$(eval $(s)_CFLAGS+=$($(t)_CFLAGS)))))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CXXFLAGS+=$($(t)_CXXFLAGS)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CXXFLAGS+=$($(t)_CXXFLAGS)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $(patsubst %cpp,%,$($(t)_SOURCES)),$(if $(findstring @$(s)@,@$(t)@),,$(eval $(s)_CXXFLAGS+=$($(t)_CXXFLAGS)))))
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $(patsubst %cpp,%,$($(t)_GENERATED)),$(if $(findstring @$(s)@,@$(t)@),,$(eval $(s)_CXXFLAGS+=$($(t)_CXXFLAGS)))))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LDFLAGS+=$($(patsubst %.c,%,$(s))_LDFLAGS)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LDFLAGS+=$($(patsubst %.cpp,%,$(s))_LDFLAGS)))))
-
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LIBS+=$($(patsubst %.c,%,$(s))_LIBS)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LIBS+=$($(patsubst %.cpp,%,$(s))_LIBS)))))
-
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LIBRARY+=$($(patsubst %.c,%,$(s))_LIBRARY)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(t)_LIBRARY+=$($(patsubst %.cpp,%,$(s))_LIBRARY)))))
-
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(eval $(t)_LIBS:=$(sort $($(t)_LIBS))))
+$(foreach t,$(lib-y),$(eval $(t)_LDFLAGS+=-Wl,-soname,lib$(t).so$(version_m:%=.%)))
+$(foreach t,$(modules-y),$(eval $(t)_LDFLAGS+=-Wl,-soname,$(t).so$(version_m:%=.%)))
 
 # The Dynamic_Loader library (libdl) allows to load external libraries.
 # If this libraries has to link to the binary functions,
 # this binary has to export the symbol with -rdynamic flag
-$(foreach t,$(lib-y) $(modules-y),$(eval $(t)_LDFLAGS+=-Wl,-soname,lib$(t).so$(version_m:%=.%)))
 $(foreach t,$(bin-y) $(sbin-y),$(if $(findstring dl, $($(t)_LIBS) $(LIBS)),$(eval $(t)_LDFLAGS+=-rdynamic)))
 
 ##
