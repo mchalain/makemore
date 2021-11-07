@@ -510,7 +510,7 @@ _check: $(subdir-target) $(lib-check-target)
 _hook:
 	$(Q)$(foreach target,$(hook-$(action:_%=%)-y),$(MAKE) -f $(file) $(target);)
 
-PHONY:clean distclean install check default_action pc all
+.PHONY:clean distclean install check default_action pc all
 clean: action:=_clean
 clean: build:=$(action) -f $(makemore) file
 clean: default_action ;
@@ -940,6 +940,8 @@ $(TMPCONFIG): $(DEFCONFIG)
 _defconfig: action:=_defconfig
 _defconfig: build:=$(action) TMPCONFIG= -f $(makemore) file
 _defconfig: $(CONFIG) $(PATHCACHE) $(subdir-target) _hook
+
+.PHONY:_defconfig
 else
 
 $(CONFIG):
