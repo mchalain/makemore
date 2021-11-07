@@ -775,13 +775,6 @@ $(pkgconfig-install): $(destdir)$(libdir:%/=%)/pkgconfig/%.pc: $(builddir)%.pc
 ###############################################################################
 # Project configuration
 #
-$(CONFIG):
-	$(warning "Configure the project first")
-	$(warning "  make <...>_defconfig")
-	$(warning "  make defconfig")
-	$(warning "  ./configure")
-	$(error  )
-
 define config_h_line
 #define $(shell echo $(1) | tr '[:lower:]' '[:upper:]') $(2)
 endef
@@ -908,16 +901,18 @@ _oldconfig: $(DEFCONFIG) $(PATHCACHE)
 # manage the defconfig files
 # 1) use the default defconfig file
 # 2) relaunch with _defconfig target
+defconfig: action:=_defconfig
 defconfig: TMPCONFIG:=$(builddir).tmpconfig
-defconfig: _info cleanconfig $(builddir) FORCE
-	$(Q)$(MAKE) TMPCONFIG=$(TMPCONFIG) _defconfig
+defconfig: build:=$(action) TMPCONFIG=$(TMPCONFIG) -f $(makemore) file
+defconfig: cleanconfig $(builddir) default_action ;
 
 # manage the defconfig files
 # 1) set the DEFCONFIG variable
 # 2) relaunch with _defconfig target
+%_defconfig: action:=_defconfig
 %_defconfig: TMPCONFIG=$(builddir).tmpconfig
-%_defconfig: $(srcdir)configs/%_defconfig _info cleanconfig $(builddir)
-	$(Q)$(MAKE) DEFCONFIG=$< TMPCONFIG=$(TMPCONFIG) _defconfig
+%_defconfig: build:=$(action) DEFCONFIG=$(srcdir)configs/%_defconfig TMPCONFIG=$(TMPCONFIG) -f $(makemore) file
+%_defconfig: cleanconfig $(builddir) default_action ;
 
 quiet_cmd__saveconfig=DEFCONFIG $(notdir $(DEFCONFIG))
 cmd__saveconfig=printf "$(foreach config,$(CONFIGS),$(config)=$($(config))\n)" > $(CONFIG)
@@ -926,6 +921,10 @@ $(PATHCACHE):
 	@printf "$(foreach config,$(PATHES),$(config)=$($(config))\n)" > $@
 
 ifneq ($(TMPCONFIG),)
+$(CONFIG): $(TMPCONFIG)
+	$(Q)$(call cmd,_saveconfig)
+	$(Q)$(RM) $(TMPCONFIG)
+
 # create a temporary defconfig file in the format of the config file
 $(TMPCONFIG): $(DEFCONFIG)
 	@cat $< | sed 's/\"/\\\"/g' | grep -v '^\#' > $@
@@ -938,8 +937,21 @@ $(TMPCONFIG): $(DEFCONFIG)
 # 1) load the defconfig file to replace the .config file
 # 2) build the pathcache
 # recipes) create the .config file with the variables from DEFCONFIG
-_defconfig: $(TMPCONFIG) $(PATHCACHE) FORCE
-	$(Q)$(call cmd,_saveconfig)
-	$(Q)$(RM) $(TMPCONFIG)
+_defconfig: action:=_defconfig
+_defconfig: build:=$(action) TMPCONFIG= -f $(makemore) file
+_defconfig: $(CONFIG) $(PATHCACHE) $(subdir-target) _hook
+else
+
+$(CONFIG):
+	$(warning "Configure the project first")
+	$(warning "  make <...>_defconfig")
+	$(warning "  make defconfig")
+	$(warning "  ./configure")
+	$(error  )
+
+_defconfig: action:=_defconfig
+_defconfig: build:=$(action) TMPCONFIG= -f $(makemore) file
+_defconfig: $(subdir-target) _hook
+
 endif # ifneq ($(TMPCONFIG),)
 endif
