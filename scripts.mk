@@ -174,53 +174,12 @@ TARGETAR:=$(TARGETPREFIX)$(AR)
 TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
 TARGETSTRIP:=$(TARGETPREFIX)$(STRIP)
 
-ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
-ifeq ($(libdir),)
-  SYSTEM?=$(shell $(TARGETCC) -dumpmachine)
-  LONG_BIT?=$(shell LANG=C getconf LONG_BIT)
-  ifneq ($(wildcard $(sysroot)/lib/$(SYSTEM)),)
-    libsuffix?=/$(SYSTEM)
-   else
-     ifneq ($(wildcard $(sysroot)/lib$(LONG_BIT)),)
-       libsuffix?=$(LONG_BIT)
-    endif
-  endif
-endif
-
-O?=2
 ifeq ($(findstring gcc,$(TARGETCC)),gcc)
   SYSROOT?=$(shell $(TARGETCC) -print-sysroot)
 endif
 
 ifneq ($(SYSROOT),)
-  sysroot:=$(SYSROOT)
-endif
-sysroot:=$(patsubst "%",%,$(sysroot:%/=%))
-
-ifneq ($(PREFIX),)
-  prefix:=$(PREFIX)
-endif
-prefix?=/usr/local
-prefix:=$(patsubst "%",%,$(prefix:%/=%))
-exec_prefix?=$(prefix)
-program_prefix?=
-library_prefix?=lib
-bindir?=$(exec_prefix)/bin
-sbindir?=$(exec_prefix)/sbin
-libexecdir?=$(exec_prefix)/libexec/$(package)
-libdir?=$(strip $(exec_prefix)/lib$(libsuffix))
-sysconfdir?=$(prefix)/etc
-includedir?=$(prefix)/include
-datadir?=$(prefix)/share/$(package)
-pkgdatadir?=$(datadir)
-pkglibdir?=$(libdir)/$(package)
-localstatedir?=$(prefix)/var
-docdir?=?=$(prefix)/share/$(package)
-PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir docdir builddir
-export $(PATHES)
-ifeq ($(destdir),)
-  destdir:=$(abspath $(DESTDIR))
-  export destdir
+  sysroot:=$(patsubst "%",%,$(SYSROOT:%/=%))
 endif
 
 ifneq ($(sysroot),)
@@ -246,6 +205,46 @@ ifneq ($(sysroot),)
   PKG_CONFIG_PATH=""
   PKG_CONFIG_SYSROOT_DIR=$(sysroot)
   export PKG_CONFIG_SYSROOT_DIR PKG_CONFIG_DIR
+endif
+
+ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
+ifeq ($(libdir),)
+  SYSTEM?=$(shell $(TARGETCC) -dumpmachine)
+  LONG_BIT?=$(shell LANG=C getconf LONG_BIT)
+  ifneq ($(wildcard $(sysroot)/lib/$(SYSTEM)),)
+    libsuffix?=/$(SYSTEM)
+   else
+     ifneq ($(wildcard $(sysroot)/lib$(LONG_BIT)),)
+       libsuffix?=$(LONG_BIT)
+    endif
+  endif
+endif
+
+O?=2
+ifneq ($(PREFIX),)
+  prefix:=$(PREFIX)
+endif
+prefix?=/usr/local
+prefix:=$(patsubst "%",%,$(prefix:%/=%))
+exec_prefix?=$(prefix)
+program_prefix?=
+library_prefix?=lib
+bindir?=$(exec_prefix)/bin
+sbindir?=$(exec_prefix)/sbin
+libexecdir?=$(exec_prefix)/libexec/$(package)
+libdir?=$(strip $(exec_prefix)/lib$(libsuffix))
+sysconfdir?=$(prefix)/etc
+includedir?=$(prefix)/include
+datadir?=$(prefix)/share/$(package)
+pkgdatadir?=$(datadir)
+pkglibdir?=$(libdir)/$(package)
+localstatedir?=$(prefix)/var
+docdir?=?=$(prefix)/share/$(package)
+PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir docdir builddir
+export $(PATHES)
+ifeq ($(destdir),)
+  destdir:=$(abspath $(DESTDIR))
+  export destdir
 endif
 
 INTERN_CFLAGS=-I.
