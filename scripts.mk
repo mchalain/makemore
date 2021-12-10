@@ -66,17 +66,19 @@ endif
 DEVINSTALL?=y
 # CONFIG could define LD CC or/and CFLAGS
 # CONFIG must be included before "Commands for build and link"
-VERSIONFILE?=$(builddir)version.h
-CONFIGFILE?=$(builddir)config.h
+# all config paths must be fix otherwise their generation
+# is required yet during cleaning
 DEFCONFIG?=$(srcdir)defconfig
+VERSIONFILE:=$(builddir)version.h
+CONFIGFILE:=$(builddir)config.h
 CONFIG:=$(builddir).config
+PATHCACHE:=$(builddir).pathcache
 
 ifneq ($(wildcard $(CONFIG)),)
   include $(CONFIG)
 # define all unset variable as variable defined as n
   $(foreach config,$(shell cat $(CONFIG) | awk '/^. .* is not set/{print $$2}'),$(eval $(config)=n))
 endif
-PATHCACHE=$(builddir).pathcache
 ifneq ($(wildcard $(PATHCACHE)),)
   include $(PATHCACHE)
 endif
