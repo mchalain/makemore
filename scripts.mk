@@ -133,10 +133,10 @@ HOSTCFLAGS=
 HOSTLDFLAGS=
 HOSTSTRIP=strip
 HOST_COMPILE:=$(shell LANG=C $(HOSTCC) -dumpmachine | $(AWK) -F- '{print $$1}')
-HOSTCCVERSION:=$(shell $(HOSTCC) -\#\#\#  2>&1 | ${GREP} -i " version ")
+HOSTCCVERSION:=$(shell $(HOSTCC) -\#\#\#  2>&1 | $(GREP) -i " version ")
 
 ifneq ($(CC),)
-  CCVERSION:=$(shell $(CC) -\#\#\#  2>&1 | ${GREP} -i " version ")
+  CCVERSION:=$(shell $(CC) -\#\#\#  2>&1 | $(GREP) -i " version ")
   ARCH:=$(shell LANG=C $(CC) -dumpmachine | $(AWK) -F- '{print $$1}')
 endif
 
