@@ -120,7 +120,7 @@ TOOLCHAIN?=
 CROSS_COMPILE?=
 
 ifeq ($(CC),cc)
-  CC:=$(realpath $(shell type $(CC)))
+  CC:=$(realpath $(shell which $(CC)))
 endif
 
 HOSTCC=gcc
@@ -151,7 +151,7 @@ ifeq ($(HOST_COMPILE),$(ARCH))
   RANLIB?=$(HOSTRANLIB)
   STRIP?=$(HOSTSTRIP)
 else
-  TOOLCHAIN?=$(dir $(dir $(realpath $(shell type $(CC)))))
+  TOOLCHAIN?=$(dir $(dir $(realpath $(shell which $(CC)))))
 endif
 
 ifneq ($(TOOLCHAIN),)
