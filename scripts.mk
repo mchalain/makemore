@@ -54,12 +54,13 @@ export srcdir
 #buildpath=$(join $(srcdir),$(ARCH))
 #endif
 ifneq ($(BUILDDIR),)
-  builddir:=$(if $(findstring ./,$(dir $(BUILDDIR:%/=%))),$(PWD)/)$(BUILDDIR:%/=%)/
+  buildpath:=$(if $(findstring ./,$(dir $(BUILDDIR:%/=%))),$(PWD)/)$(BUILDDIR:%/=%)/
+  builddir:=$(buildpath)
 else
   builddir:=$(srcdir)
 endif
 ifneq ($(CROSS_COMPILE),)
-  builddir:=$(builddir)$(CROSS_COMPILE:%-=%)/
+  buildpath:=$(builddir)$(CROSS_COMPILE:%-=%)/
 endif
 
 # internal configuration to install HEADERS file or not
@@ -87,8 +88,8 @@ ifneq ($(file),)
   include $(file)
 endif
 
-ifneq ($(builddir),)
-  obj=$(builddir)$(cwdir)
+ifneq ($(buildpath),)
+  obj=$(buildpath)$(cwdir)
 else
   obj=
 endif
@@ -597,7 +598,7 @@ quiet_cmd_link=LINK $*
 # build rules
 ##
 .SECONDEXPANSION:
-$(sort $(hostobj) $(obj) $(builddir)): $(builddir)%: $(file)
+$(sort $(hostobj) $(obj) $(builddir) $(buildpath)): $(builddir)%: $(file)
 	@$(call cmd,mkdir,$@)
 
 $(obj)%.lexer.c $(hostobj)%.lexer.c:%.l $(file)
@@ -845,10 +846,10 @@ cmd_oldconfig=cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFI
 ##
 # config rules
 ##
-$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG))
+$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(dir $(CONFIGFILE))
 	@$(call cmd,generate_config_h)
 
-$(VERSIONFILE):
+$(VERSIONFILE): $(dir $(VERSIONFILE))
 	@$(call cmd,generate_version_h)
 
 ##
