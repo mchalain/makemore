@@ -3,27 +3,24 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(h
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(patsubst %.ui,%.ui.hpp,$(filter %.ui,$($(t)_QTOBJECTS) $($(t)_QTOBJECTS-y)))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(patsubst %.ui,%.moc.cpp,$(filter %.ui,$($(t)_QTOBJECTS) $($(t)_QTOBJECTS-y)))))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CXXFLAGS+=$($(t)_CXXFLAGS)))))
+#$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
+#$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_GENERATED),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CXXFLAGS+=$($(t)_CXXFLAGS)))))
 
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)_GENERATED:=$(addprefix $(obj),$($(t)_GENERATED))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y), $(eval $(t)-objs+=$(call src2obj,$(notdir $($(t)_GENERATED)))))
+#$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(call src2obj,$($(t)_GENERATED))))
 
-target-objs+=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_GENERATED))
-
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CFLAGS+=$($(t)_CFLAGS)))))
-$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(foreach s, $($(t)_SOURCES),$(if $(findstring $(t),$(s)),,$(eval $(patsubst %.cpp,%,$(s))_CXXFLAGS+=$($(t)_CXXFLAGS)))))
+#objs-target:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(addprefix $(objdir),$($(t)_GENERATED))		$(addprefix $(objdir),    $($(t)-objs)))
+#hostobjs-target:=$(foreach t, $(hostbin-y) $(hostslib-y),                    $(addprefix $(hostobjdir),$($(t)_GENERATED))	$(addprefix $(hostobjdir),$($(t)-objs)))
 
 quiet_cmd_moc_hpp=QTMOC $*
  cmd_moc_hpp=$(MOC) $(INCLUDES) $($*_MOCFLAGS) -o $@ $<
 quiet_cmd_uic_hpp=QTUIC $*
  cmd_uic_hpp=$(UIC) $< > $@
 
-$(obj)%.moc.cpp:$(obj)%.ui.hpp $(file)
+$(objdir)%.moc.cpp:$(obj)%.ui.hpp $(file)
 	@$(call cmd,moc_hpp)
 
-$(obj)%.moc.cpp:%.hpp $(file)
+$(objdir)%.moc.cpp:%.hpp $(file)
 	@$(call cmd,moc_hpp)
 
-$(obj)%.ui.hpp:%.ui $(file)
+$(objdir)%.ui.hpp:%.ui $(file)
 	@$(call cmd,uic_hpp)

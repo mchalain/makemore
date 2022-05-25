@@ -5,12 +5,13 @@ $(foreach dl,$(download-y),$(if $($(dl)_SOURCE),, \
 $(foreach dl,$(download-y),$(eval $(dl)_URL=$($(dl)_SITE)$($(dl)_SOURCE:%=/%)))
 $(foreach dl,$(download-y),$(if $(findstring .zip,$($(dl)_SOURCE)),$(eval $(dl)_SITE_METHOD:=zip)))
 $(foreach dl,$(download-y),$(if $(findstring .tar,$($(dl)_SOURCE)),$(eval $(dl)_SITE_METHOD:=tar)))
-$(foreach dl,$(download-y),$(eval $($(dl)_SITE_METHOD)download-target+=$(obj)$(dl)))
 
-pretargets+=$(download-target)
-pretargets+=$(zipdownload-target)
-pretargets+=$(tardownload-target)
-pretargets+=$(gitdownload-target)
+$(foreach dl,$(download-y),$(eval $($(dl)_SITE_METHOD)download-target+=$(objdir)$(dl)))
+
+targets+=$(download-target)
+targets+=$(zipdownload-target)
+targets+=$(tardownload-target)
+targets+=$(gitdownload-target)
 
 ###############################################################################
 # Commands for download
@@ -38,16 +39,16 @@ $(DL_DIR)%:
 	@$(call qcmd,mkdir,$(dir $@))
 	@$(call cmd,download,$(patsubst %/,%,$(dir $*)))
 
-$(tardownload-target): $(obj)%: $(DL_DIR)%
+$(tardownload-target): $(objdir)%: $(DL_DIR)%
 	tar -xf $< -C $@
 	
-$(zipdownload-target): $(obj)%: $(DL_DIR)%/$$(%_SOURCE) FORCE
+$(zipdownload-target): $(objdir)%: $(DL_DIR)%/$$(%_SOURCE) FORCE
 	unzip -o -d $@ $<
 
-$(download-target): $(obj)%: $(DL_DIR)%/$$(%_SOURCE)
+$(download-target): $(objdir)%: $(DL_DIR)%/$$(%_SOURCE)
 	@$(call qcmd,mkdir,$(dir $@))
 	@cp $< $(dir $@)
 
-$(gitclone-target): $(obj)%:
+$(gitdownload-target): $(objdir)%:
 	@$(call cmd,gitclone)
-	@ln -snf $(DL_DIR)$* $(obj)$*
+	@ln -snf $(DL_DIR)$* $@
