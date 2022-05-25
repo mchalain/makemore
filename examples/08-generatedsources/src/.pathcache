@@ -1,0 +1,13 @@
+prefix=/usr/local
+ exec_prefix=/usr/local
+ library_prefix=lib
+ bindir=/usr/local/bin
+ sbindir=/usr/local/sbin
+ libexecdir=/usr/local/libexec/
+ libdir=/usr/local/lib
+ sysconfdir=/usr/local/etc
+ includedir=/usr/local/include
+ datadir=/usr/local/share/
+ pkgdatadir=/usr/local/share/
+ pkglibdir=/usr/local/lib/
+ localstatedir=/usr/local/var

@@ -1,0 +1,2 @@
+BUILD_LIBRARY=y
+MYMACRO="test"
