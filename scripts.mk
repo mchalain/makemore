@@ -322,6 +322,7 @@ define notext
 $(call notass,$(call notc,$1))
 endef
 
+$(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$($(t)_GENERATED-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES+=$($(t)_SOURCES-y)))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)_SOURCES),,$(if $(wildcard $(src)$(t).c),$(eval $(t)_SOURCES+=$(t).c))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)_SOURCES),,$(if $(wildcard $(src)$(t).cpp),$(eval $(t)_SOURCES+=$(t).cpp))))
@@ -420,16 +421,19 @@ bin-target:=$(addprefix $(objdir),$(addprefix $(program_prefix),$(addsuffix $(bi
 hostslib-target:=$(addprefix $(hostobjdir),$(addsuffix $(slib-ext:%=.%),$(addprefix lib,$(hostslib-y))))
 hostbin-target:=$(addprefix $(hostobjdir),$(addsuffix $(bin-ext:%=.%),$(hostbin-y)))
 
+data-target:=$(sort $(data-y))
+data-target+=$(foreach data,$(data-y),$($(data)_GENERATED))
+
 pkgconfig-target:=$(foreach pkgconfig,$(sort $(pkgconfig-y)),$(addprefix $(builddir),$(addsuffix .pc,$(pkgconfig))))
 lib-pkgconfig-target:=$(sort $(foreach lib,$(sort $(lib-y) $(slib-y)),$(addprefix $(builddir).,$(addsuffix .pc.in,$($(lib)_PKGCONFIG)))))
 
-targets+=$(objs-target)
 targets+=$(lib-dynamic-target)
 targets+=$(modules-target)
 targets+=$(lib-static-target)
 targets+=$(bin-target)
 targets+=$(lib-pkgconfig-target)
 targets+=$(pkgconfig-target)
+targets+=$(data-target)
 
 hook-target:=$(hook-$(action:_%=%)) $(hook-$(action:_%=%)-y)
 
@@ -440,7 +444,7 @@ ifneq ($(CROSS_COMPILE),)
   destdir?=$(sysroot)
 endif
 sysconf-install:=$(addprefix $(destdir)$(sysconfdir:%/=%)/,$(sysconf-y))
-data-install:=$(addprefix $(destdir)$(datadir:%/=%)/,$(data-y))
+data-install:=$(addprefix $(destdir)$(datadir:%/=%)/,$(data-target))
 doc-install:=$(addprefix $(destdir)$(docdir:%/=%)/,$(doc-y))
 include-install:=$(addprefix $(destdir)$(includedir:%/=%)/,$(include-y))
 lib-static-install:=$(addprefix $(destdir)$(libdir:%/=%)/,$(addsuffix $(slib-ext:%=.%),$(addprefix lib,$(slib-y))))
@@ -483,13 +487,13 @@ _info:
 
 _hostbuild: action:=_hostbuild
 _hostbuild: build:=$(action) -f $(makemore) file
-_hostbuild: _info $(subdir-target) $(hostobjdir) $(hostobjs-target) $(hostslib-target) $(hostbin-target) _hook
+_hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target) _hook
 	@:
 
 _configbuild: $(if $(wildcard $(DEFCONFIG)),$(CONFIGFILE))
 _versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 
-_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(data-y) $(doc-y) $(targets) _hook
+_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(doc-y) $(targets) _hook
 	@:
 
 _install: action:=_install
