@@ -734,6 +734,10 @@ $(lib-check-target): check_%: $(TMPDIR)/$(TESTFILE:%=%.c)
 ###############################################################################
 # Commands for install
 ##
+quiet_cmd_install_dir=INSTALL $*
+define cmd_install_dir
+	find $< -type f -exec $(INSTALL_DATA) "{}" "$(@D)/{}" \;
+endef
 quiet_cmd_install_data=INSTALL $*
 define cmd_install_data
 	$(INSTALL_DATA) $< $@
