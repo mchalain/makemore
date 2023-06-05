@@ -257,9 +257,13 @@ endif
 
 INTERN_CFLAGS=-I.
 INTERN_CXXFLAGS=-I.
-ifneq ($(src),)
-INTERN_CFLAGS+=-I$(src)
-INTERN_CXXFLAGS+=-I$(src)
+ifneq ($(srcdir),)
+INTERN_CFLAGS+=-I$(srcdir)
+INTERN_CXXFLAGS+=-I$(srcdir)
+endif
+ifneq ($(objdir),)
+INTERN_CFLAGS+=-I$(objdir)
+INTERN_CXXFLAGS+=-I$(objdir)
 endif
 ifneq ($(wildcard $(VERSIONFILE)),)
 INTERN_CFLAGS+=-include $(VERSIONFILE)
