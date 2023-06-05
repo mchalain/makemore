@@ -405,7 +405,9 @@ subdir-target:=$(foreach sdir,$(subdir-y),$(if $(filter-out %$(makefile-ext:%=.%
 # targets recipes generation
 ##
 
-objs-target:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(addprefix $(objdir),$($(t)_GENERATED))		$(addprefix $(objdir),    $($(t)-objs)))
+objs-target:=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(addprefix $(objdir),$($(t)_GENERATED)))
+objs-target+=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(addprefix $(objdir),    $($(t)-objs)))
+objs-target+=$(foreach t, $(sysconf-y) $(data-y),$(addprefix $(objdir),$($(t)_GENERATED)))
 hostobjs-target:=$(foreach t, $(hostbin-y) $(hostslib-y),                    $(addprefix $(hostobjdir),$($(t)_GENERATED))	$(addprefix $(hostobjdir),$($(t)-objs)))
 
 lib-check-target:=$(sort $(LIBRARY:%=check_%) $(sort $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY:%=check_%))))
@@ -422,7 +424,6 @@ hostslib-target:=$(addprefix $(hostobjdir),$(addsuffix $(slib-ext:%=.%),$(addpre
 hostbin-target:=$(addprefix $(hostobjdir),$(addsuffix $(bin-ext:%=.%),$(hostbin-y)))
 
 data-target:=$(sort $(data-y))
-data-target+=$(foreach data,$(data-y),$($(data)_GENERATED))
 
 pkgconfig-target:=$(foreach pkgconfig,$(sort $(pkgconfig-y)),$(addprefix $(builddir),$(addsuffix .pc,$(pkgconfig))))
 lib-pkgconfig-target:=$(sort $(foreach lib,$(sort $(lib-y) $(slib-y)),$(addprefix $(builddir).,$(addsuffix .pc.in,$($(lib)_PKGCONFIG)))))
