@@ -12,5 +12,11 @@ rpcalc_LIBS+=m
 bin-y+=test
 test_GENERATED+=test.c
 
-$(objdir)test.c:
+$(objdir)test.c: $(hostobjdir)generator
 	$(hostobjdir)generator > $@
+
+data-y+=Changelog
+Changelog_GENERATED+=Changelog
+
+$(objdir)Changelog:
+	git log > $@

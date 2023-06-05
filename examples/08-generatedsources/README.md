@@ -25,3 +25,19 @@ test_GENERATED+=test.c
 test.c:
 	generator $@
 ```
+
+This method may be used for other kind of files
+
+```Makefile
+data-y+=Changelog
+Changelog_GENERATED+=Changelog
+
+$(objdir)Changelog:
+	git log > $@
+```
+
+## Build out of directory
+
+```shell
+> make BUILDDIR=$(pwd)/build
+```
