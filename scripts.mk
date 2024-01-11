@@ -873,9 +873,6 @@ define cmd_generate_version_h
 	$(file > $@,$(call version_h))
 endef
 
-quiet_cmd_oldconfig=OLDCONFIG
-cmd_oldconfig=cat $(DEFCONFIG) | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFIG)
-
 ##
 # config rules
 ##
@@ -927,28 +924,30 @@ $(pkgconfig-target): $(builddir)%.pc:$(builddir).%.pc.in
 menuconfig gconfig xconfig config:
 	$(EDITOR) $(CONFIG)
 
-configfiles+=$(wildcard $(CONFIG))
 configfiles+=$(wildcard $(CONFIGFILE))
 configfiles+=$(wildcard $(VERSIONFILE))
 configfiles+=$(wildcard $(TMPCONFIG))
 configfiles+=$(wildcard $(PATHCACHE))
+
 cleanconfig: FORCE
 	@$(foreach file,$(configfiles), $(call cmd,clean,$(file));)
-
-$(CONFIG).old: $(CONFIG)
-	$(Q)$(if $<,mv $< $@)
 
 # set the list of configuration variables
 ifneq ($(wildcard $(DEFCONFIG)),)
 SETCONFIGS=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}'; )
 UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^. .* is not set/{print $$2}')
 endif
+
+# set to no all configs available into defconfig and not into .config
 CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
 $(foreach config,$(CONFIGS),$(eval $(config):=$(if $($(config)),$($(config)),n)))
 
 oldconfig: _info $(builddir) $(CONFIG) FORCE
 	@$(call cmd,clean,$(PATHCACHE))
 	$(Q)$(MAKE) _oldconfig
+
+quiet_cmd_oldconfig=OLDCONFIG
+cmd_oldconfig=cat $< | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFIG)
 
 _oldconfig: RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config)))
 _oldconfig: $(DEFCONFIG) $(PATHCACHE)
@@ -967,20 +966,23 @@ defconfig: cleanconfig $(builddir) default_action ;
 # 2) relaunch with _defconfig target
 DEFCONFIGFILES:=$(notdir $(wildcard $(srcdir)configs/*))
 $(DEFCONFIGFILES): %_defconfig: cleanconfig $(builddir)
+	@$(call cmd,clean,$(CONFIG))
 	$(Q)$(MAKE) _defconfig DEFCONFIG=$(srcdir)configs/$*_defconfig TMPCONFIG=$(builddir).tmpconfig -f $(makemore) file=$(file)
 
 .PHONY: $(DEFCONFIGFILES)
 
-quiet_cmd__saveconfig=DEFCONFIG $(notdir $(DEFCONFIG))
-cmd__saveconfig=printf "$(foreach config,$(CONFIGS),$(config)=$($(config))\n)" > $(CONFIG)
+ifneq ($(TMPCONFIG),)
+
+quiet_cmd__saveconfig=DEFCONFIG $(notdir $<)
+define cmd__saveconfig
+ printf "$(foreach config,$(2),$(config)=$($(config))\n)" > $@
+endef
+
+$(CONFIG): $(DEFCONFIG) $(TMPCONFIG)
+	$(Q)$(call cmd,_saveconfig,$(CONFIGS))
 
 $(PATHCACHE):
-	@printf "$(foreach config,$(PATHES),$(config)=$($(config))\n)" > $@
-
-ifneq ($(TMPCONFIG),)
-$(CONFIG): $(TMPCONFIG)
-	$(Q)$(call cmd,_saveconfig)
-	$(Q)$(RM) $(TMPCONFIG)
+	$(Q)$(call cmd,_saveconfig,$(PATHES))
 
 # create a temporary defconfig file in the format of the config file
 $(TMPCONFIG): $(DEFCONFIG)
@@ -996,7 +998,7 @@ $(TMPCONFIG): $(DEFCONFIG)
 # recipes) create the .config file with the variables from DEFCONFIG
 _defconfig: action:=_defconfig
 _defconfig: build:=$(action) TMPCONFIG= -f $(makemore) file
-_defconfig: $(CONFIG) $(PATHCACHE) $(subdir-target) _hook;
+_defconfig: $(PATHCACHE) $(CONFIG) $(subdir-target) _hook _configbuild _versionbuild ;
 	@:
 
 .PHONY:_defconfig
