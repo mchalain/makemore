@@ -413,13 +413,14 @@ data-target:=$(sort $(data-y))
 pkgconfig-target:=$(foreach pkgconfig,$(sort $(pkgconfig-y)),$(addprefix $(builddir),$(addsuffix .pc,$(pkgconfig))))
 lib-pkgconfig-target:=$(sort $(foreach lib,$(sort $(lib-y) $(slib-y)),$(addprefix $(builddir).,$(addsuffix .pc.in,$($(lib)_PKGCONFIG)))))
 
+clean-target:=
+
 targets+=$(lib-dynamic-target)
 targets+=$(modules-target)
 targets+=$(lib-static-target)
 targets+=$(bin-target)
 targets+=$(lib-pkgconfig-target)
 targets+=$(pkgconfig-target)
-targets+=$(data-target)
 
 hook-target:=$(hook-$(action:_%=%)) $(hook-$(action:_%=%)-y)
 
@@ -509,7 +510,7 @@ _clean: _info $(subdir-target) _clean_objs _clean_targets _clean_objdirs _hook
 	@:
 
 _clean_targets:
-	@$(call cmd,clean,$(wildcard $(gcov-target)))
+	@$(call cmd,clean,$(wildcard $(clean-target)))
 	@$(call cmd,clean,$(wildcard $(targets)))
 	@$(call cmd,clean,$(wildcard $(hostslib-target)))
 	@$(call cmd,clean,$(wildcard $(hostbin-target)))
@@ -536,7 +537,8 @@ clean: default_action ;
 
 distclean: action:=_clean
 distclean: build:=$(action) -f $(makemore) file
-distclean: default_action cleanconfig
+distclean: cleanconfig default_action
+	@$(call cmd,clean,$(CONFIG))
 	@$(call cmd,clean_dir,$(wildcard $(builddir)host))
 	@$(call cmd,clean_dir,$(filter-out $(srcdir),$(builddir)))
 	@$(call cmd,clean_dir,$(wildcard $(gitclone-target)))
