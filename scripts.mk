@@ -136,6 +136,9 @@ HOSTSTRIP=strip
 HOST_COMPILE:=$(shell LANG=C $(HOSTCC) -dumpmachine | $(AWK) -F- '{print $$1}')
 HOSTCCVERSION:=$(shell $(HOSTCC) -\#\#\#  2>&1 | $(GREP) -i " version ")
 
+ifneq ($(CROSS_COMPILE),)
+  CC=$(CROSS_COMPILE)gcc
+endif
 ifneq ($(CC),)
   CCVERSION:=$(shell $(CC) -\#\#\#  2>&1 | $(GREP) -i " version ")
   ARCH:=$(shell LANG=C $(CC) -dumpmachine | $(AWK) -F- '{print $$1}')
@@ -156,7 +159,7 @@ else
 endif
 
 ifneq ($(TOOLCHAIN),)
-  export PATH:=$(PATH):$(TOOLCHAIN):$(TOOLCHAIN)/bin
+  export PATH:=$(TOOLCHAIN):$(TOOLCHAIN)/bin:$(PATH)
 endif
 
 ifneq ($(dir $(CC)),./)
@@ -182,6 +185,15 @@ ifeq ($(findstring gcc,$(TARGETCC)),gcc)
   SYSROOT?=$(shell $(TARGETCC) -print-sysroot)
 endif
 
+ifeq ($(destdir),)
+  destdir:=$(abspath $(DESTDIR))
+  export destdir
+endif
+
+ifneq ($(CROSS_COMPILE),)
+  destdir?=$(sysroot)
+endif
+
 ifneq ($(SYSROOT),)
   sysroot:=$(patsubst "%",%,$(SYSROOT:%/=%))
 endif
@@ -201,14 +213,15 @@ ifneq ($(sysroot),)
     RPATHFLAGS+=-Wl,-rpath,$(strip $(pkglibdir))
     SYSROOT_LDFLAGS+=-L$(sysroot)$(strip $(pkglibdir))
   endif
-  ifneq ($(destdir),)
-    SYSROOT_CFLAGS+=-I$(destdir)$(strip $(includedir))
-    SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(libdir))
-    SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(pkglibdir))
-  endif
   PKG_CONFIG_PATH=""
   PKG_CONFIG_SYSROOT_DIR=$(sysroot)
   export PKG_CONFIG_SYSROOT_DIR PKG_CONFIG_DIR
+endif
+
+ifneq ($(destdir),)
+  SYSROOT_CFLAGS+=-I$(destdir)$(strip $(includedir))
+  SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(libdir))
+  SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(pkglibdir))
 endif
 
 ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
@@ -249,11 +262,16 @@ infodir?=$(datarootdir)/info
 localedir?=$(datarootdir)/locale
 mandir?=$(datarootdir)/man
 PATHES=prefix exec_prefix library_prefix bindir sbindir libexecdir libdir sysconfdir includedir datadir pkgdatadir pkglibdir localstatedir docdir builddir
-export $(PATHES)
-ifeq ($(destdir),)
-  destdir:=$(abspath $(DESTDIR))
-  export destdir
+ifneq ($(TOOLCHAIN),)
+  PATHES+=TOOLCHAIN
 endif
+ifneq ($(SYSROOT),)
+  PATHES+=SYSROOT
+endif
+ifneq ($(CROSS_COMPILE),)
+  PATHES+=CROSS_COMPILE
+endif
+export $(PATHES)
 
 INTERN_CFLAGS=-I.
 INTERN_CXXFLAGS=-I.
