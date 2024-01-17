@@ -52,3 +52,12 @@ $(download-target): $(objdir)%: $(DL_DIR)%/$$(%_SOURCE)
 $(gitdownload-target): $(objdir)%:
 	@$(call cmd,gitclone)
 	@ln -snf $(DL_DIR)$* $@
+
+_help_entries_download:
+	@echo " download-y+="
+	@echo " <target>_SOURCE+="
+	@echo " <target>_SITE+="
+	@echo " <target>_SITE_METHOD+="
+
+_help_options_download:
+	@

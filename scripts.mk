@@ -41,7 +41,7 @@ sbin-y:=
 lib-y:=
 slib-y:=
 modules-y:=
-modules-y:=
+include-y:=
 data-y:=
 doc-y:=
 hostbin-y:=
@@ -1036,4 +1036,69 @@ _defconfig: $(subdir-target) _hook;
 
 .PHONY:_defconfig
 endif # ifneq ($(TMPCONFIG),)
+ifneq ($(wildcard scripts/help.mk),)
+  HELP_OPTIONS+=_help_options_more
 endif
+ifneq ($(wildcard scripts/gcov.mk),)
+  HELP_ENTRIES+=_help_entries_gcov
+  HELP_OPTIONS+=_help_options_gcov
+endif
+ifneq ($(wildcard scripts/qt.mk),)
+  HELP_ENTRIES+=_help_entries_qt
+  HELP_OPTIONS+=_help_options_qt
+endif
+ifneq ($(wildcard scripts/download.mk),)
+  HELP_ENTRIES+=_help_entries_download
+  HELP_OPTIONS+=_help_options_download
+endif
+help: _help_main _help_options_main $(HELP_OPTIONS)
+	@
+
+_help_main:
+	@echo "makemore is a set of tools to build your program on every OS with only"
+	@echo "a compiler and "make" tools"
+
+_help_options_main:
+	@echo ""
+	@echo "Make accept several options:"
+	@echo " make defconfig :"
+	@echo "  options:"
+	@echo "    prefix=<directory path>      default /usr/local"
+	@echo "    exec_prefix=<directory path> default $$prefix"
+	@echo "    bindir=<directory path>      default $$exec_prefix/bin"
+	@echo "    sbindir=<directory path>     default $$exec_prefix/sbin"
+	@echo "    libdir=<directory path>      default $$exec_prefix/lib"
+	@echo "    includedir=<directory path>  default $$exec_prefix/include"
+	@echo "    sysconfdir=<directory path>  default $$exec_prefix/etc"
+	@echo "    pkglibdir=<directory path>   default $$exec_prefix/lib/<package>"
+	@echo "    datadir=<directory path>     default $$exec_prefix/share/<package>"
+	@echo ""
+	@echo "    builddir=<directory path>        default ."
+	@echo "    CROSS_COMPILE=<compiler prefix>  default empty"
+	@echo "    SYSROOT=<system root directory>  default empty or /"
+	@echo "    TOOLCHAIN=<directory path>       default empty"
+	@echo ""
+	@$(foreach config,$(CONFIGS),echo "    $(config)=<y|n>    default $($(config))";)
+	@echo ""
+	@echo " make <name>_defconfig : configuration from a file of \"configs\" directory"
+	@echo "  options: "
+	@echo "    as defconfig"
+	@echo ""
+	@echo " make all :"
+	@echo "  options: "
+	@echo "    DESTDIR=<directory path>     to search libraries into it default empty"
+	@echo "    V=<0|1>			to set verbosity default 0"
+	@echo "    G=<0|1>			to set gcov options default 0"
+	@echo "    DEBUG=<n|y>			to set the debug options default n"
+	@echo ""
+	@echo " make install :"
+	@echo "  options: "
+	@echo "    DESTDIR=<directory path>     to search libraries into it default empty"
+	@echo "    DEVINSTALL=<y|n>		to install header files default y"
+	@echo ""
+	@echo " make check : check all LIBRARY entries of the Makefile scripts"
+	@echo "  options: "
+	@echo ""
+
+endif
+

@@ -24,3 +24,9 @@ $(objdir)%.moc.cpp:%.hpp $(file)
 
 $(objdir)%.ui.hpp:%.ui $(file)
 	@$(call cmd,uic_hpp)
+
+_help_entries_qt:
+	@echo " <target>_QTOBJECTS-y+="
+
+_help_options_qt:
+	@
