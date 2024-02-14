@@ -1,40 +1,50 @@
 # Dependencies
-## Library dependencies
-*Makemore* is able to check the availability of a libraries with the *pkg-config* tool.
-It uses this tools to retrieve the build flags (CFLAGS, CXXFLAGS and LDFLAGS) and even checks the version of the library.
 
-The binaries' rule uses the *<binary>_LIBS* variable to append the requested libraries. To use *pkg-config* the binaries' rule must replace this variable with *<binary>\_LIBRARY*.
+## Library dependencies
+
+*Makemore* is able to check the availability of a libraries with the *pkg-config* tool.  
+It uses this tools to retrieve the build flags
+(**CFLAGS**, **CXXFLAGS** and **LDFLAGS**).
+
+To use *pkg-config* the binaries' rule must set *<binary>\_LIBRARY* variable with the package name of the external library.
 
 ```Makefile
 bin-y+=foo
 foo_LIBRARY+=zlib
 ```
 
-The entries of *<binary>\_LIBRARY* must be the package's name and not the library name. If the package doesn't exist, the value of the variable is appended to the *<binary>\_LIBS* variable.
+**Note**: The entries of *<binary>\_LIBRARY* must be the package's name and not the library name.  
+**Note**: The binaries' rule uses the *<binary>_LIBS* variable to append the requested libraries without checking.
+**Note**: If a internal library provide its pc file inside the same directory, the binaries may use it too.
 
-### Version checking
-The project may add a version for each entries of the *<binary>\_LIBRARY* variable. The version must follow the package's name inside {}.
+### Library version
+
+The project may add a version for each entries of the *<binary>\_LIBRARY* variable.
+The version must follow the package's name inside {}.
 
 ```Makefile
 bin-y+=foo
 foo_LIBRARY+=zlib{1.2.11}
 ```
 
-The requested version may be upto or over a value with the use of the minus character:
+The `-` indicates the rule to apply to the checking.
+If the version has to be up a fix value the `-` must be in prefix of the version:
 
-for at least the version
-```Makefile
-bin-y+=foo
-foo_LIBRARY+=zlib{1.2.-}
-```
-
-for no newer version
 ```Makefile
 bin-y+=foo
 foo_LIBRARY+=zlib{-1.2.}
 ```
 
-The *make* command accepts a special target *check* to do this checking:
+If the version has to be at least a fix value the `-` must be in suffix of the version:
+
+```Makefile
+bin-y+=foo
+foo_LIBRARY+=zlib{1.2.-}
+```
+
+### Library checking
+
+The *make* command accepts a special target *check* to do the checking of all external libraries:
 
 ```bash
 $ make check
@@ -45,9 +55,19 @@ $ make check
 Requested 'zlib <= 1.2' but version of zlib is 1.2.11
 ...
 ```
+
 ## Library packaging
+
 *Makemore* is able to generate an entries for the *pkg-config* tool. Like a library or binary, a *pkgconfig-y* variable needs to be appended to create a new *pc* file.
-After each library of the project may be added to this package, with the *<library>\_PKGCONFIG* variable:
+
+The entries are:
+
+ * *pkgconfig-y+=<pcname>* : generate libmylib.pc and install to $(libdir)/pkg-config/ directory :
+ * *<pcname>_DESC="my library description"* : a string to describe the library into pkgconfig file :
+ * *<pcname>_LIBS+=<library>* : append a library into the *<pcname>.pc.in* file :
+ * *<library>_PKGCONFIG+=<pcname>* : append a library into the *<pcname>.pc.in* file :
+
+A *<libmylib>.pc.in* may be available for special configuration otherwise *Makemore* generates this file first.
 
 ```Makefile
 pkgconfig-y+=foo
@@ -55,6 +75,9 @@ foo_DESC="library example"
 
 lib-y+=bar
 bar_PKGCONFIG+=foo
+
+lib-y+=bar2
+foo_LIBS+=bar2
 ```
 
 The project's building generates the file *pc* file:
@@ -83,4 +106,5 @@ Description: "library example"
 Cflags: -I${includedir}
 Libs: -L${libdir}  -lbar
 ```
+**Note**: some time the pkgconfig file for *mylib* may be named *mylib,pc* or *libmylib.pc*. The both cases are supported.
 

@@ -379,14 +379,10 @@ gererate:
 #define CONFIG_X265 n
 ```
 
-# Dependancies of external libraries management:
+# Dependencies to external libraries:
 
-## retrieve the compiler flags for each external library
-Makemore uses `pkg-config` to retrieve information about your each
-library added to the **LIBRARY** variable. The **CFLAGS** and the
-**LDFLAGS** will be automatically updates with `pkg-config` result.
-If the library is not found then only **LDFLAGS** is updated to add the
-library.
+*Makemore* may check the availability and version of and external libarry
+and retrieves the compiler flags with `pkg-config`.
 
 ```Makefile
 include scripts.mk
@@ -395,46 +391,7 @@ main_SOURCES:=main.c
 main_LIBRARY-$(CONFIG_X264)+=x264
 ```
 
-If `libx264` is installed into "/usr/local/", the object will be create
-with the following command line:
-
-```bash
- $ gcc -c -I/usr/local/include -o main.o main.c
- $ gcc -L/usr/local/lib -lpthread -o main main.o -lx264
-```
-
-## check the version of an external library
-Another Makemore feature is to check the version of the libraries
-with `pkg-config`
-
-```Makefile
-include scripts.mk
-bin-y+=main
-main_SOURCES:=main.c
-main_LIBRARY-$(CONFIG_X264)+=x264{0.125.x-}
-main_LIBRARY-$(CONFIG_AVCODEC)+=avcodec{-54.23.100}
-```
-
-The `-` indicates the rule to apply to the checking.
-If the version has to be up a fix value the `-` must be in prefix of the version:
-
-```Makefile
-main_LIBRARY-$(CONFIG_AVCODEC)+=avcodec{-54.23.100}
-```
-
-If the version has to be at least a fix value the `-` must be in suffix of the version:
-
-```Makefile
-main_LIBRARY-$(CONFIG_X264)+=x264{0.125.x-}
-```
-
-If a specific version is required, the value must be indicate alone.
-
-The checking is not required and has to be call by the user with a command:
-
-```bash
-$ make check
-```
+cf.:[dependencies](examples/04-dependencies)
 
 # Build your project outside the source tree
 
