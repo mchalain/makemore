@@ -23,7 +23,7 @@ quiet=quiet_
 Q=@
 endif
 echo-cmd = $(if $($(quiet)cmd_$(1)), echo '  $($(quiet)cmd_$(1))';)
-cmd = $(echo-cmd) $(cmd_$(1))
+cmd = $(if $(quiet),$(echo-cmd)) $(cmd_$(1))
 qcmd = $(cmd_$(1))
 
 ##
