@@ -253,15 +253,15 @@ library_prefix?=lib
 bindir?=$(exec_prefix)/bin
 sbindir?=$(exec_prefix)/sbin
 libexecdir?=$(exec_prefix)/libexec/$(package)
-datarootdir?=$(prefix)/share/
-datadir?=$(datarootdir)/$(package)
+datarootdir?=$(prefix)/share
+datadir?=$(datarootdir)$(package:%=/%)
 libdir?=$(strip $(exec_prefix)/lib$(libsuffix))
 sysconfdir?=$(prefix)/etc
 includedir?=$(prefix)/include
 pkgdatadir?=$(datadir)
-pkglibdir?=$(libdir)/$(package)
+pkglibdir?=$(libdir)$(package:%=/%)
 localstatedir?=$(prefix)/var
-docdir?=$(datarootdir)/doc/$(package)
+docdir?=$(datarootdir)/doc$(package:%=/%)
 infodir?=$(datarootdir)/info
 localedir?=$(datarootdir)/locale
 mandir?=$(datarootdir)/man
