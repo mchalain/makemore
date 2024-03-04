@@ -26,6 +26,10 @@ echo-cmd = $(if $($(quiet)cmd_$(1)), echo '  $($(quiet)cmd_$(1))';)
 cmd = $(if $(quiet),$(echo-cmd)) $(cmd_$(1))
 qcmd = $(cmd_$(1))
 
+define newline
+
+endef
+
 ##
 # file extention definition
 bin-ext=
@@ -888,20 +892,39 @@ $(pkgconfig-target): $(builddir)%.pc:$(builddir)%.pc.in
 ###############################################################################
 # Project configuration
 #
+define _generate_configline
+$(foreach config,$2,$(if $(findstring n,$$($$(config))),,$(if $$($$(config)),#define $$(config) $$($$(config)))))
+endef
+
+define config_header_h
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+endef
+
+define config_footer_h
+
+#define PKGLIBDIR "$(pkglibdir)"
+#define DATADIR "$(datadir)"
+#define PKG_DATADIR "$(pkgdatadir)"
+#define SYSCONFDIR "$(sysconfdir)"
+#define LOCALSTATEDIR "$(localstatedir)"
+
+#endif
+endef
+
 quiet_cmd_generate_config_h=CONFIG $(notdir $@)
 define cmd_generate_config_h
-	$(file > $@,#ifndef __CONFIG_H__) \
-	$(file >> $@,#define __CONFIG_H__) \
-	$(foreach config,$2,$(if $(findstring n,$($(config))),,$(if $($(config)),$(file >> $@,#define $(config) $($(config)))))) \
-	$(file >> $@,) \
-	$(file >> $@,#define PKGLIBDIR "$(pkglibdir)") \
-	$(file >> $@,#define DATADIR "$(datadir)") \
-	$(file >> $@,#define PKG_DATADIR "$(pkgdatadir)") \
-	$(file >> $@,#define SYSCONFDIR "$(sysconfdir)") \
-	$(file >> $@,#define LOCALSTATEDIR "$(localstatedir)") \
-	$(file >> $@,) \
-	$(file >> $@,#endif)
+  $(file >> $@,$(call config_header_h))
+  $(foreach config,$2,$(file >> $@,#define $(config) $($(config)) $(newline)))
+  $(file >> $@)
+  $(file >> $@,$(call config_footer_h))
 endef
+
+$(CONFIGFILE): OTHER_CONFIGS=$(foreach line,$(file < $(CONFIG)), $(foreach pattern,$(line), $(if $(findstring $(firstword $(subst =, ,$(pattern))), $(CONFIGS)),,$(firstword $(subst =, ,$(pattern))))))
+$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(dir $(CONFIGFILE))
+	$(file > $@)
+	@$(call cmd,generate_config_h,$(sort $(CONFIGS) $(OTHER_CONFIGS)))
 
 define version_h
 #ifndef __VERSION_H__
@@ -920,19 +943,16 @@ endef
 
 quiet_cmd_generate_version_h=VERSION $(notdir $@)
 define cmd_generate_version_h
-	$(file > $@,$(call version_h))
+	$(file >> $@,$(call version_h))
 endef
+
+$(VERSIONFILE): $(dir $(VERSIONFILE))
+	$(file > $@)
+	@$(call cmd,generate_version_h)
 
 ##
 # config rules
 ##
-$(CONFIGFILE): OTHER_CONFIGS=$(foreach line,$(file < $(CONFIG)), $(foreach pattern,$(line), $(if $(findstring $(firstword $(subst =, ,$(pattern))), $(CONFIGS)),,$(firstword $(subst =, ,$(pattern))))))
-$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(dir $(CONFIGFILE))
-	@$(call cmd,generate_config_h,$(CONFIGS) $(OTHER_CONFIGS))
-
-$(VERSIONFILE): $(dir $(VERSIONFILE))
-	@$(call cmd,generate_version_h)
-
 .PHONY: menuconfig gconfig xconfig config oldconfig _oldconfig saveconfig defconfig FORCE
 menuconfig gconfig xconfig config:
 	$(EDITOR) $(CONFIG)
@@ -988,18 +1008,16 @@ CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
 
 quiet_cmd__saveconfig=DEFCONFIG $(notdir $<)
 define cmd__saveconfig
-    printf "%s\n" $(2) >> $@
+  $(foreach config,$2,$(file >> $@,$(config)=$($(config))$(newline)))
 endef
 
-$(CONFIG): CONFIG_CONFIGS=$(foreach config,$(CONFIGS),$(config)=$($(config)))
 $(CONFIG): $(DEFCONFIG) $(TMPCONFIG)
-	$(Q)$(RM) $$@
-	$(Q)$(call cmd,_saveconfig,$(CONFIG_CONFIGS))
+	$(Q)$(file >$@)
+	$(Q)$(call cmd,_saveconfig,$(sort $(CONFIGS)))
 
-$(PATHCACHE): PATHES_CONFIGS=$(foreach path,$(PATHES),$(path)=$($(path)))
 $(PATHCACHE):
-	$(Q)$(RM) $@
-	$(Q)$(call cmd,_saveconfig,$(PATHES_CONFIGS))
+	$(Q)$(file >$@)
+	$(Q)$(call cmd,_saveconfig,$(PATHES))
 
 # create a temporary defconfig file in the format of the config file
 $(TMPCONFIG): $(DEFCONFIG)
