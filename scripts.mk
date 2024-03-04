@@ -502,7 +502,7 @@ build:=$(action) -f $(makemore) file
 .DEFAULT_GOAL:=build
 .PHONY: _build _install _clean _distclean _check _hostbuild
 .PHONY: build install clean distclean check hosttools
-build: $(builddir) _configbuild _versionbuild default_action
+build: $(builddir) default_action
 
 _info:
 	@:
@@ -511,9 +511,6 @@ _hostbuild: action:=_hostbuild
 _hostbuild: build:=$(action) -f $(makemore) file
 _hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target) _hook
 	@:
-
-_configbuild: $(if $(wildcard $(DEFCONFIG)),$(CONFIGFILE))
-_versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 
 _build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(doc-y) $(targets) _hook
 	@:
@@ -566,7 +563,7 @@ distclean: cleanconfig default_action
 
 install:: action:=_install
 install:: build:=$(action) -f $(makemore) file
-install:: _configbuild _versionbuild default_action ;
+install:: default_action ;
 
 check: action:=_check
 check: build:=$(action) -s -f $(makemore) file
@@ -580,7 +577,7 @@ default_action: _info
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
 
-all: _configbuild _versionbuild default_action ;
+all: default_action ;
 
 version?=0.1
 subversion?=$(word 3,$(subst ., ,$(version)))
@@ -846,62 +843,7 @@ $(libexec-install): $(destdir)$(libexecdir:%/=%)/%$(bin-ext:%=.%): $(objdir)%$(b
 $(pkgconfig-install): $(destdir)$(libdir:%/=%)/pkgconfig/%.pc: $(builddir)%.pc
 	@$(call cmd,install_data)
 
-###############################################################################
-# Project configuration
-#
-define config_h_line
-#define $(shell echo $(1) | tr '[:lower:]' '[:upper:]') $(2)
-endef
-
-define config_h_end
-
-#define PKGLIBDIR "$(pkglibdir)"
-#define DATADIR "$(datadir)"
-#define PKG_DATADIR "$(pkgdatadir)"
-#define SYSCONFDIR "$(sysconfdir)"
-#define LOCALSTATEDIR "$(localstatedir)"
-
-#endif
-endef
-
-quiet_cmd_generate_config_h=CONFIG $(notdir $@)
-define cmd_generate_config_h
-	$(file > $@,#ifndef __CONFIG_H__) \
-	$(file >> $@,#define __CONFIG_H__) \
-	$(foreach config,$(SETCONFIGS),$(if $(findstring n,$($(config))),,$(file >> $@,$(call config_h_line,$(config),$($(config)))))) \
-	$(file >> $@,$(call config_h_end))
-endef
-
-define version_h
-#ifndef __VERSION_H__
-#define __VERSION_H__
-
-$(if $(version),#define VERSION $(version))
-$(if $(version),#define VERSION_MAJOR $(firstword $(subst ., ,$(version))))
-$(if $(version),#define VERSION_MINOR $(word 2,$(subst ., ,$(version))))
-$(if $(package),#define PACKAGE "$(package)")
-$(if $(version),#define PACKAGE_VERSION "$(version)")
-$(if $(package),#define PACKAGE_NAME "$(package)")
-$(if $(package),#define PACKAGE_TARNAME "$(subst " ","_",$(package))")
-$(if $(package),#define PACKAGE_STRING "$(package) $(version)")
-#endif
-endef
-
-quiet_cmd_generate_version_h=VERSION $(notdir $@)
-define cmd_generate_version_h
-	$(file > $@,$(call version_h))
-endef
-
-##
-# config rules
-##
-$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(dir $(CONFIGFILE))
-	@$(call cmd,generate_config_h)
-
-$(VERSIONFILE): $(dir $(VERSIONFILE))
-	@$(call cmd,generate_version_h)
-
-##
+########################################################################
 # the makefiles are recursives and (s)lib-y is cleaned each call
 # for each call of Makemore, the libraries list must be filled.
 # <package>.pc.in is updated each call
@@ -942,6 +884,54 @@ $(builddir)%.pc.in:
 $(pkgconfig-target): $(builddir)%.pc:$(builddir)%.pc.in
 	@$(call cmd,generate_pkgconfig)
 
+###############################################################################
+# Project configuration
+#
+quiet_cmd_generate_config_h=CONFIG $(notdir $@)
+define cmd_generate_config_h
+	$(file > $@,#ifndef __CONFIG_H__) \
+	$(file >> $@,#define __CONFIG_H__) \
+	$(foreach config,$2,$(if $(findstring n,$($(config))),,$(if $($(config)),$(file >> $@,#define $(config) $($(config)))))) \
+	$(file >> $@,) \
+	$(file >> $@,#define PKGLIBDIR "$(pkglibdir)") \
+	$(file >> $@,#define DATADIR "$(datadir)") \
+	$(file >> $@,#define PKG_DATADIR "$(pkgdatadir)") \
+	$(file >> $@,#define SYSCONFDIR "$(sysconfdir)") \
+	$(file >> $@,#define LOCALSTATEDIR "$(localstatedir)") \
+	$(file >> $@,) \
+	$(file >> $@,#endif)
+endef
+
+define version_h
+#ifndef __VERSION_H__
+#define __VERSION_H__
+
+$(if $(version),#define VERSION $(version))
+$(if $(version),#define VERSION_MAJOR $(firstword $(subst ., ,$(version))))
+$(if $(version),#define VERSION_MINOR $(word 2,$(subst ., ,$(version))))
+$(if $(package),#define PACKAGE "$(package)")
+$(if $(version),#define PACKAGE_VERSION "$(version)")
+$(if $(package),#define PACKAGE_NAME "$(package)")
+$(if $(package),#define PACKAGE_TARNAME "$(subst " ","_",$(package))")
+$(if $(package),#define PACKAGE_STRING "$(package) $(version)")
+#endif
+endef
+
+quiet_cmd_generate_version_h=VERSION $(notdir $@)
+define cmd_generate_version_h
+	$(file > $@,$(call version_h))
+endef
+
+##
+# config rules
+##
+$(CONFIGFILE): OTHER_CONFIGS=$(foreach line,$(file < $(CONFIG)), $(foreach pattern,$(line), $(if $(findstring $(firstword $(subst =, ,$(pattern))), $(CONFIGS)),,$(firstword $(subst =, ,$(pattern))))))
+$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(dir $(CONFIGFILE))
+	@$(call cmd,generate_config_h,$(CONFIGS) $(OTHER_CONFIGS))
+
+$(VERSIONFILE): $(dir $(VERSIONFILE))
+	@$(call cmd,generate_version_h)
+
 .PHONY: menuconfig gconfig xconfig config oldconfig _oldconfig saveconfig defconfig FORCE
 menuconfig gconfig xconfig config:
 	$(EDITOR) $(CONFIG)
@@ -953,16 +943,6 @@ configfiles+=$(wildcard $(PATHCACHE))
 
 cleanconfig: FORCE
 	@$(foreach file,$(configfiles), $(call cmd,clean,$(file));)
-
-# set the list of configuration variables
-ifneq ($(wildcard $(DEFCONFIG)),)
-SETCONFIGS=$(shell cat $(DEFCONFIG) | sed 's/\"/\\\"/g' | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}'; )
-UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^. .* is not set/{print $$2}')
-endif
-
-# set to no all configs available into defconfig and not into .config
-CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
-$(foreach config,$(CONFIGS),$(eval $(config):=$(if $($(config)),$($(config)),n)))
 
 oldconfig: _info $(builddir) $(CONFIG) FORCE
 	@$(call cmd,clean,$(PATHCACHE))
@@ -994,33 +974,48 @@ $(DEFCONFIGFILES): %_defconfig: cleanconfig $(builddir)
 .PHONY: $(DEFCONFIGFILES)
 
 ifneq ($(TMPCONFIG),)
+include $(TMPCONFIG)
+
+# set the list of configuration variables
+ifneq ($(wildcard $(DEFCONFIG)),)
+SETCONFIGS=$(shell cat $(DEFCONFIG) | grep -v '^\#' | awk -F= 't$$1 != t {print $$1}'; )
+UNSETCONFIGS=$(shell cat $(DEFCONFIG) | awk '/^. .* is not set/{print $$2}')
+endif
+
+# set to no all configs available into defconfig and not into .config
+CONFIGS:=$(SETCONFIGS) $(UNSETCONFIGS)
 
 quiet_cmd__saveconfig=DEFCONFIG $(notdir $<)
 define cmd__saveconfig
- printf "$(foreach config,$(2),$(config)=$($(config))\n)" > $@
+    printf "%s\n" $(2) >> $@
 endef
 
+$(CONFIG): CONFIG_CONFIGS=$(foreach config,$(CONFIGS),$(config)=$($(config)))
 $(CONFIG): $(DEFCONFIG) $(TMPCONFIG)
-	$(Q)$(call cmd,_saveconfig,$(CONFIGS))
+	$(Q)$(RM) $$@
+	$(Q)$(call cmd,_saveconfig,$(CONFIG_CONFIGS))
 
+$(PATHCACHE): PATHES_CONFIGS=$(foreach path,$(PATHES),$(path)=$($(path)))
 $(PATHCACHE):
-	$(Q)$(call cmd,_saveconfig,$(PATHES))
+	$(Q)$(RM) $@
+	$(Q)$(call cmd,_saveconfig,$(PATHES_CONFIGS))
 
 # create a temporary defconfig file in the format of the config file
 $(TMPCONFIG): $(DEFCONFIG)
-	@cat $< | sed 's/\"/\\\"/g' | grep -v '^\#' > $@
+	@cat $< | grep -v '^\#' > $@
 	@cat $< | awk '/^. .* is not set/{print $$2"=n"}' >> $@
 
 # load the temporary defconfig file
 # if a value is already set on the command line of 'make', the value stay:
--include $(TMPCONFIG)
+_configbuild: $(if $(wildcard $(DEFCONFIG)),$(CONFIGFILE))
+_versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 
 # 1) load the defconfig file to replace the .config file
 # 2) build the pathcache
 # recipes) create the .config file with the variables from DEFCONFIG
 _defconfig: action:=_defconfig
 _defconfig: build:=$(action) TMPCONFIG= -f $(makemore) file
-_defconfig: $(PATHCACHE) $(CONFIG) $(subdir-target) _hook _configbuild _versionbuild ;
+_defconfig: $(PATHCACHE) $(CONFIG) $(subdir-target) $(lib-check-target) _hook _configbuild _versionbuild ;
 	@:
 
 .PHONY:_defconfig
@@ -1035,11 +1030,14 @@ $(CONFIG):
 
 _defconfig: action:=_defconfig
 _defconfig: build:=$(action) TMPCONFIG= -f $(makemore) file
-_defconfig: $(subdir-target) _hook;
+_defconfig: $(subdir-target) $(lib-check-target) _hook;
 	@:
 
 .PHONY:_defconfig
 endif # ifneq ($(TMPCONFIG),)
+
+########################################################################
+
 ifneq ($(wildcard scripts/help.mk),)
   HELP_OPTIONS+=_help_options_more
 endif
