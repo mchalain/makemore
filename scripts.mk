@@ -762,7 +762,8 @@ $(TMPDIR)/$(TESTFILE:%=%.c):
 
 $(lib-check-target): check_%: $(TMPDIR)/$(TESTFILE:%=%.c) FORCE
 	$(Q)$(call cmd,check_lib,$*)
-	$(Q)echo "HAVE_$(firstword $(subst {, ,$(subst },,$*)))=y" | tr '[:lower:]' '[:upper:]' | sed 's/[.-]/_/g' >>  $(CONFIG)
+	$(eval HAVE=HAVE_$(shell echo $(firstword $(subst {, ,$(subst },,$*))) | tr '[:lower:]' '[:upper:]' | sed 's/[.-]/_/g'))
+	$(Q)echo "$(HAVE)=y" >>  $(CONFIG)
 
 ###############################################################################
 # Commands for install
@@ -913,13 +914,14 @@ endef
 quiet_cmd_generate_config_h=CONFIG $(notdir $@)
 define cmd_generate_config_h
   $(file >> $@,$(call config_header_h))
-  $(foreach config,$2,$(file >> $@,#define $(config) $($(config)) $(newline)))
+  $(foreach config,$2,$(if $(findstring $($(config)),n),,$(file >> $@,#define $(config) $($(config)) $(newline))))
   $(file >> $@)
   $(file >> $@,$(call config_footer_h))
 endef
 
 $(CONFIGFILE): OTHER_CONFIGS=$(foreach line,$(file < $(CONFIG)), $(foreach pattern,$(line), $(if $(findstring $(firstword $(subst =, ,$(pattern))), $(CONFIGS)),,$(firstword $(subst =, ,$(pattern))))))
 $(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(dir $(CONFIGFILE))
+	$(eval $(file < $(CONFIG)))
 	$(file > $@)
 	@$(call cmd,generate_config_h,$(sort $(CONFIGS) $(OTHER_CONFIGS)))
 
