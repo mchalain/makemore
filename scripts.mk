@@ -433,9 +433,6 @@ hostbin-target:=$(addprefix $(hostobjdir),$(addsuffix $(bin-ext:%=.%),$(hostbin-
 data-target:=$(sort $(data-y))
 
 pkgconfig-target:=$(foreach pkgconfig,$(sort $(pkgconfig-y)),$(addprefix $(builddir),$(addsuffix .pc,$(pkgconfig))))
-$(foreach l,$(pkgconfig-y),$(eval $(l)_LIBS+=$(l:lib%=%)))
-$(foreach l,$(pkgconfig-y),$(eval $(l)_LIBS+=$($(l)_LIBS-y)))
-$(foreach l,$(lib-y) $(slib-y), $(foreach pc, $($(l)_PKGCONFIG), $(eval $(pc)_LIBS+=$(l))))
 
 clean-target:=
 
