@@ -26,7 +26,7 @@ $(objdir)%.ui.hpp:%.ui $(file)
 	@$(call cmd,uic_hpp)
 
 _help_entries_qt:
-	@echo " <target>_QTOBJECTS-y+="
+	@echo " <target>_QTOBJECTS-y+=<file>.[hpp,ui]"
 
 _help_options_qt:
 	@
