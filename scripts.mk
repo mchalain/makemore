@@ -293,6 +293,14 @@ endif
 ifneq ($(wildcard $(CONFIGFILE)),)
 INTERN_CFLAGS+=-include $(CONFIGFILE)
 endif
+ifeq ($(DEBUG),y)
+  INTERN_CFLAGS+=-g -DDEBUG -O0
+  INTERN_CXXFLAGS+=-g -DDEBUG -O0
+else
+  INTERN_CFLAGS+=-DNDEBUG -O$(O)
+  INTERN_CXXFLAGS+=-DNDEBUG -O$(O)
+endif
+
 INTERN_LIBS=c
 
 # Update LDFLAGS for each directory containing at least one library.
@@ -313,8 +321,6 @@ HOSTLDFLAGS:=$(sort $(HOSTLDFLAGS))
 export HOSTLDFLAGS
 endif
 endif
-
-CFLAGS+=-O$(O)
 
 ##
 # objects recipes generation
