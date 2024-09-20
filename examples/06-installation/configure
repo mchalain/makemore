@@ -302,7 +302,7 @@ fi
 
 printf "\nDependencies checking:\n"
 if [ "$check" != "disable" ]; then
-	${MAKE} --no-print-directory BUILDDIR=${builddir} -C${srcdir} check
+	${MAKE} --no-print-directory BUILDDIR=${builddir} -C${srcdir} deps
 	if [ $? != 0 ]; then
 		echo "binary dependencies failed"
 		exit -1

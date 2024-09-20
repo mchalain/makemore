@@ -381,7 +381,7 @@ gererate:
 
 # Dependencies to external libraries:
 
-*Makemore* may check the availability and version of and external libarry
+*Makemore* may check the availability and version of libary dependencies
 and retrieves the compiler flags with `pkg-config`.
 
 ```Makefile

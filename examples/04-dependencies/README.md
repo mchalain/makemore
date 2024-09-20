@@ -2,7 +2,7 @@
 
 ## Library dependencies
 
-*Makemore* is able to check the availability of a libraries with the *pkg-config* tool.  
+*Makemore* is able to check the libraries dependencies with the *pkg-config* tool.  
 It uses this tools to retrieve the build flags
 (**CFLAGS**, **CXXFLAGS** and **LDFLAGS**).
 
@@ -44,10 +44,10 @@ foo_LIBRARY+=zlib{1.2.-}
 
 ### Library checking
 
-The *make* command accepts a special target *check* to do the checking of all external libraries:
+The *make* command accepts a special target *deps* to do the checking of all external libraries:
 
 ```bash
-$ make check
+$ make deps
   SUBDIR lib/Makefile
   SUBDIR src/Makefile
   SUBDIR foo.mk

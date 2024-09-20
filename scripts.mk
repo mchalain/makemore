@@ -423,7 +423,7 @@ objs-target+=$(foreach t, $(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$(a
 objs-target+=$(foreach t, $(sysconf-y) $(data-y),$(addprefix $(objdir),$($(t)_GENERATED)))
 hostobjs-target:=$(foreach t, $(hostbin-y) $(hostslib-y),                    $(addprefix $(hostobjdir),$($(t)_GENERATED))	$(addprefix $(hostobjdir),$($(t)-objs)))
 
-lib-check-target:=$(sort $(LIBRARY:%=check_%) $(sort $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY:%=check_%))))
+lib-deps-target:=$(sort $(LIBRARY:%=deps_%) $(sort $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y),$($(t)_LIBRARY:%=deps_%))))
 
 ifeq (STATIC,y)
 lib-static-target:=$(addprefix $(objdir),$(addsuffix $(slib-ext:%=.%),$(addprefix $(library_prefix),$(slib-y) $(lib-y))))
@@ -507,8 +507,8 @@ dev-install-$(DEVINSTALL)+=$(pkgconfig-install)
 action:=_build
 build:=$(action) -f $(makemore) file
 .DEFAULT_GOAL:=build
-.PHONY: _build _install _clean _distclean _check _hostbuild
-.PHONY: build install clean distclean check hosttools
+.PHONY: _build _install _clean _distclean _deps _hostbuild
+.PHONY: build install clean distclean deps hosttools
 build: $(builddir) default_action
 
 _info:
@@ -546,14 +546,14 @@ _clean_objdirs:
 	$(Q)$(if $(target-objs),$(call cmd,clean_dir,$(realpath $(filter-out $(srcdir)$(cwdir),$(objdir)))))
 	$(Q)$(if $(target-hostobjs),$(call cmd,clean_dir,$(wildcard $(realpath $(hostobjdir)))))
 
-_check: action:=_check
-_check: build:=$(action) -s -f $(makemore) file
-_check: $(subdir-target) $(lib-check-target)
+_deps: action:=_deps
+_deps: build:=$(action) -s -f $(makemore) file
+_deps: $(subdir-target) $(lib-deps-target)
 
 _hook:
 	$(Q)$(foreach target,$(hook-$(action:_%=%)-y),$(MAKE) -f $(file) $(target);)
 
-.PHONY:clean distclean install check default_action pc all
+.PHONY:clean distclean install deps default_action pc all
 clean: action:=_clean
 clean: build:=$(action) -f $(makemore) file
 clean: default_action ;
@@ -572,9 +572,9 @@ install:: action:=_install
 install:: build:=$(action) -f $(makemore) file
 install:: default_action ;
 
-check: action:=_check
-check: build:=$(action) -s -f $(makemore) file
-check: $(.DEFAULT_GOAL) ;
+deps: action:=_deps
+deps: build:=$(action) -s -f $(makemore) file
+deps: $(.DEFAULT_GOAL) ;
 
 hosttools: action:=_hostbuild
 hosttools: build:=$(action) -f $(makemore) file
@@ -768,7 +768,7 @@ endef
 $(TMPDIR)/$(TESTFILE:%=%.c):
 	$(Q)echo "int main(){return 0;}" > $@
 
-$(lib-check-target): check_%: $(TMPDIR)/$(TESTFILE:%=%.c) FORCE
+$(lib-deps-target): deps_%: $(TMPDIR)/$(TESTFILE:%=%.c) FORCE
 	$(Q)$(call cmd,check_lib,$*)
 	$(Q)$(if $(findstring $(HAVE_result),y,$(call cmd,test_lib, $(CHECKLIB))),/bin/true)
 	$(eval HAVE=HAVE_$(shell echo $(firstword $(subst {, ,$(subst },,$*))) | tr '[:lower:]' '[:upper:]' | sed 's/[.-]/_/g'))
@@ -1047,7 +1047,7 @@ _versionbuild: $(if $(strip $(package)$(version)), $(VERSIONFILE))
 # recipes) create the .config file with the variables from DEFCONFIG
 _defconfig: action:=_defconfig
 _defconfig: build:=$(action) TMPCONFIG= -f $(makemore) file
-_defconfig: $(PATHCACHE) $(CONFIG) $(subdir-target) $(lib-check-target) _hook _configbuild _versionbuild ;
+_defconfig: $(PATHCACHE) $(CONFIG) $(subdir-target) $(lib-deps-target) _hook _configbuild _versionbuild ;
 	@:
 
 .PHONY:_defconfig
@@ -1062,7 +1062,7 @@ $(CONFIG):
 
 _defconfig: action:=_defconfig
 _defconfig: build:=$(action) TMPCONFIG= -f $(makemore) file
-_defconfig: $(subdir-target) $(lib-check-target) _hook;
+_defconfig: $(subdir-target) $(lib-deps-target) _hook;
 	@:
 
 .PHONY:_defconfig
@@ -1130,7 +1130,7 @@ _help_options_main:
 	@echo "    DESTDIR=<directory path>     to search libraries into it default empty"
 	@echo "    DEVINSTALL=<y|n>		to install header files default y"
 	@echo ""
-	@echo " make check : check all LIBRARY entries of the Makefile scripts"
+	@echo " make deps : check all LIBRARY dependencies of the Makefile scripts"
 	@echo "  options: "
 	@echo ""
 
