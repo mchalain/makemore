@@ -756,9 +756,11 @@ define cmd_check_lib
 	$(eval CHECKOPTIONS=$(if $(CHECKVERSION),$(if $(findstring -,$(firstword $(CHECKVERSION))),--max-version=$(word 2,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(lastword $(CHECKVERSION))),--atleast-version=$(word 1,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(CHECKVERSION)),,--exact-version=$(CHECKVERSION))))
-	$(Q)PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config $(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB);
-	$(eval CHECKCFLAGS:=$(call cmd_pkgconfig,$(CHECKLIB),--cflags))
-	$(eval CHECKLDFLAGS:=$(call cmd_pkgconfig,$(CHECKLIB),--libs))
+	$(eval HAVE_result=$(shell PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config $(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB) && echo y || echo n))
+endef
+define cmd_test_lib
+	$(eval CHECKCFLAGS:=$(call cmd_pkgconfig,$(2),--cflags))
+	$(eval CHECKLDFLAGS:=$(call cmd_pkgconfig,$(2),--libs))
 	$(Q)$(TARGETCC) -c -o $(<:%.c=%.o) $< $(INTERN_CFLAGS) $(CHECKCFLAGS);
 	$(Q)$(TARGETCC) -o $(TMPDIR)/$(TESTFILE) $(<:%.c=%.o) $(INTERN_LDFLAGS) $(CHECKLDFLAGS) > /dev/null 2>&1
 endef
@@ -768,8 +770,10 @@ $(TMPDIR)/$(TESTFILE:%=%.c):
 
 $(lib-check-target): check_%: $(TMPDIR)/$(TESTFILE:%=%.c) FORCE
 	$(Q)$(call cmd,check_lib,$*)
+	$(Q)$(if $(findstring $(HAVE_result),y,$(call cmd,test_lib, $(CHECKLIB))),/bin/true)
 	$(eval HAVE=HAVE_$(shell echo $(firstword $(subst {, ,$(subst },,$*))) | tr '[:lower:]' '[:upper:]' | sed 's/[.-]/_/g'))
-	$(Q)echo "$(HAVE)=y" >>  $(CONFIG)
+	$(Q)sed -i "/^$(HAVE)=*/d" $(CONFIG)
+	$(Q)echo "$(HAVE)=$(HAVE_result)" >>  $(CONFIG)
 
 ###############################################################################
 # Commands for install
