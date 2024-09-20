@@ -964,13 +964,16 @@ $(VERSIONFILE): $(dir $(VERSIONFILE))
 ##
 .PHONY: menuconfig gconfig xconfig config oldconfig _oldconfig saveconfig defconfig FORCE
 menuconfig gconfig xconfig config:
+	$(Q)$(foreach file,$(wildcard $(CONFIGFILE) $(VERSIONFILE)), $(call cmd,clean,$(file));)
 	$(EDITOR) $(CONFIG)
+	$(Q)$(MAKE) $(CONFIGFILE) $(VERSIONFILE)
 
 configfiles+=$(wildcard $(CONFIGFILE))
 configfiles+=$(wildcard $(VERSIONFILE))
 configfiles+=$(wildcard $(TMPCONFIG))
 configfiles+=$(wildcard $(PATHCACHE))
 
+cleanconfig: TMPCONFIG:=$(builddir).tmpconfig
 cleanconfig: FORCE
 	$(Q)$(foreach file,$(configfiles), $(call cmd,clean,$(file));)
 
@@ -990,8 +993,9 @@ _oldconfig: $(DEFCONFIG) $(PATHCACHE)
 # 2) relaunch with _defconfig target
 defconfig: action:=_defconfig
 defconfig: TMPCONFIG:=$(builddir).tmpconfig
-defconfig: build:=$(action) TMPCONFIG=$(builddir).tmpconfig -f $(makemore) file
-defconfig: cleanconfig $(builddir) default_action ;
+defconfig: cleanconfig $(builddir)
+	$(Q)$(call cmd,clean,$(CONFIG))
+	$(Q)$(MAKE) _defconfig TMPCONFIG=$(builddir).tmpconfig -f $(makemore) file=$(file)
 
 # manage the defconfig files
 # 1) set the DEFCONFIG variable
