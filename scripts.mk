@@ -725,6 +725,11 @@ $(hostbin-target): $(hostobjdir)%$(bin-ext:%=.%): $$(addprefix $(hostobjdir),$$(
 $(hostslib-target): $(hostobjdir)lib%$(slib-ext:%=.%): $$(addprefix $(hostobjdir),$$(%-objs)) $(file)
 	$(Q)$(call cmd,hostld_slib)
 
+ifneq ($(objdir),)
+$(objdir)%.h:%.h
+	$(Q)cp $< $@
+endif
+
 # this line is for <target>_GENERATED variable
 %: ;
 
@@ -809,7 +814,7 @@ endef
 $(foreach dir, includedir datadir docdir sysconfdir libdir bindir sbindir ,$(addprefix $(destdir),$($(dir))/)):
 	$(Q)$(MKDIR) $@
 
-$(include-install): $(destdir)$(includedir:%/=%)/%: %
+$(include-install): $(destdir)$(includedir:%/=%)/%: $(objdir)%
 	$(Q)$(call cmd,install_data)
 	$(Q)$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
