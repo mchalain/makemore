@@ -215,26 +215,30 @@ ifneq ($(sysroot),)
   SYSROOT_CFLAGS+=-isysroot $(sysroot)
   SYSROOT_LDFLAGS+=--sysroot=$(sysroot)
   ifneq ($(strip $(includedir)),)
-    SYSROOT_CFLAGS+=-I$(sysroot)$(strip $(includedir))
+    SYSROOT_CFLAGS+=$(addprefix -I$(sysroot),$(includedir))
   endif
   ifneq ($(strip $(libdir)),)
-    RPATHFLAGS+=-Wl,-rpath,$(strip $(libdir))
-    SYSROOT_LDFLAGS+=-L$(sysroot)$(strip $(libdir))
+    RPATHFLAGS+=-Wl,-rpath,$(libdir)
+    SYSROOT_LDFLAGS+=$(addprefix -L$(sysroot),/lib)
+    SYSROOT_LDFLAGS+=$(addprefix -L$(sysroot),/usr/lib)
+    SYSROOT_LDFLAGS+=$(addprefix -L$(sysroot),$(libdir))
   endif
   ifneq ($(strip $(pkglibdir)),)
-    RPATHFLAGS+=-Wl,-rpath,$(strip $(pkglibdir))
-    SYSROOT_LDFLAGS+=-L$(sysroot)$(strip $(pkglibdir))
+    RPATHFLAGS+=-Wl,-rpath,$(pkglibdir)
+    SYSROOT_LDFLAGS+=$(addprefix -L$(sysroot),$(pkglibdir))
   endif
   PKG_CONFIG_PATH=""
   PKG_CONFIG_SYSROOT_DIR=$(sysroot)
-  export PKG_CONFIG_SYSROOT_DIR PKG_CONFIG_DIR
+  export PKG_CONFIG_SYSROOT_DIR
 endif
 
 ifneq ($(destdir),)
-  SYSROOT_CFLAGS+=-I$(destdir)$(strip $(includedir))
-  SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(libdir))
-  SYSROOT_LDFLAGS+=-L$(destdir)$(strip $(pkglibdir))
+  SYSROOT_CFLAGS+=$(addprefix -I$(destdir),$(includedir))
+  SYSROOT_LDFLAGS+=$(addprefix -L$(destdir),$(libdir))
+  SYSROOT_LDFLAGS+=$(addprefix -L$(destdir),$(pkglibdir))
 endif
+
+SYSROOT_LDFLAGS:=$(sort $(SYSROOT_LDFLAGS))
 
 ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
 ifeq ($(libdir),)
