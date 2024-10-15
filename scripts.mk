@@ -191,6 +191,12 @@ ifeq ($(findstring gcc,$(TARGETCC)),gcc)
   SYSROOT?=$(shell $(TARGETCC) -print-sysroot)
 endif
 
+ifneq ($(SYSROOT),)
+ ifeq ($(DESTDIR),)
+   DESTDIR=$(SYSROOT)
+ endif
+endif
+
 ifeq ($(destdir),)
   destdir:=$(abspath $(DESTDIR))
   export destdir
