@@ -379,7 +379,7 @@ $(foreach t,$(lib-y) $(modules-y),$(eval $(t)_CFLAGS+=-fPIC))
 $(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
 define cmd_pkgconfig
-	$(shell PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config:$(builddir) $(PKGCONFIG) --silence-errors $(2) $(1))
+	$(shell PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config:$(sysroot)/usr/lib/pkgconfig:$(builddir) $(PKGCONFIG) --silence-errors $(2) $(1))
 endef
 # LIBRARY may contain libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
@@ -808,7 +808,7 @@ define cmd_check_lib
 	$(eval CHECKOPTIONS=$(if $(CHECKVERSION),$(if $(findstring -,$(firstword $(CHECKVERSION))),--max-version=$(word 2,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(lastword $(CHECKVERSION))),--atleast-version=$(word 1,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(CHECKVERSION)),,--exact-version=$(CHECKVERSION))))
-	$(eval HAVE_result=$(shell PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config $(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB) && echo y || echo n))
+	$(eval HAVE_result=$(shell PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config:$(sysroot)/usr/lib/pkgconfig $(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB) && echo y || echo n))
 endef
 define cmd_test_lib
 	$(eval CHECKCFLAGS:=$(call cmd_pkgconfig,$(2),--cflags))
