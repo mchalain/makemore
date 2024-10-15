@@ -582,6 +582,8 @@ hosttools: action:=_hostbuild
 hosttools: build:=$(action) -f $(makemore) file
 hosttools: $(hostbuilddir) default_action ;
 
+.PHONY:dist check distcheck install-strip info uninstall
+
 default_action: _info
 	$(Q)$(MAKE) $(build)=$(file)
 	@:
