@@ -511,7 +511,7 @@ build:=$(action) -f $(makemore) file
 .DEFAULT_GOAL:=build
 .PHONY: _build _install _clean _distclean _deps _hostbuild
 .PHONY: build install clean distclean deps hosttools
-build: $(builddir) default_action
+build: $(builddir)/Maefile default_action
 
 _info:
 	@:
@@ -646,16 +646,47 @@ quiet_cmd_hostld_slib=HOSTLD $*
 ###############################################################################
 # Commands for directories and links
 ##
-quiet_cmd_mkdir=DIR $*
+quiet_cmd_mkdir=DIR $(notdir $(@D))
  cmd_mkdir=$(MKDIR) $2
 quiet_cmd_link=LINK $*
  cmd_link=$(LN) $2 $3
+###############################################################################
+# Build out of tree Makefile generation
+#
+quiet_cmd_generate_makefile=MAKEFILE $(notdir $@/Makefile)
+ define cmd_generate_makefile
+  $(file >  $@,BUILDDIR=$$(dir $$(firstword $$(MAKEFILE_LIST))))
+  $(file >> $@,srcdir=$(srcdir))
+  $(if $(CROSS_COMPILE),$(file >> $@,MAKE_OPTS+=CROSS_COMPILE=$(CROSS_COMPILE)))
+  $(if $(SYSROOT),$(file >> $@,MAKE_OPTS+=SYSROOT=$(SYSROOT)))
+  $(if $(ARCH),$(file >> $@,MAKE_OPTS+=ARCH=$(ARCH)))
+  $(if $(findstring $(CROSS_COMPILE),$(CC)),$(file >> $@,MAKE_OPTS+=CC="$(CC)"))
+  $(if $(findstring $(CROSS_COMPILE),$(CXX)),$(file >> $@,MAKE_OPTS+=CXX="$(CXX)"))
+  $(if $(findstring $(CROSS_COMPILE),$(RANLIB)),$(file >> $@,MAKE_OPTS+=RANLIB="$(RANLIB)"))
+  $(if $(findstring $(CROSS_COMPILE),$(OBJDUMP)),$(file >> $@,MAKE_OPTS+=OBJDUMP="$(OBJDUMP)"))
+  $(if $(findstring $(CROSS_COMPILE),$(STRIP)),$(file >> $@,MAKE_OPTS+=STRIP="$(STRIP)"))
+  $(if $(findstring $(CROSS_COMPILE),$(OBJCOPY)),$(file >> $@,MAKE_OPTS+=OBJCOPY="$(OBJCOPY)"))
+  $(if $(findstring $(CROSS_COMPILE),$(READELF)),$(file >> $@,MAKE_OPTS+=READELF="$(READELF)"))
+  $(if $(findstring $(CROSS_COMPILE),$(LD)),$(file >> $@,MAKE_OPTS+=LD="$(LD)"))
+  $(if $(findstring $(CROSS_COMPILE),$(CPP)),$(file >> $@,MAKE_OPTS+=CPP="$(CPP)"))
+  $(if $(CFLAGS),$(file >> $@,MAKE_OPTS+=CFLAGS="$(CFLAGS)"))
+  $(if $(CXXFLAGS),$(file >> $@,MAKE_OPTS+=CXXFLAGS="$(CXXFLAGS)"))
+  $(if $(CPPFLAGS),$(file >> $@,MAKE_OPTS+=CPPFLAGS="$(CPPFLAGS)"))
+  $(if $(LDFLAGS),$(file >> $@,MAKE_OPTS+=LDFLAGS="$(LDFLAGS)"))
+  $(file >> $@,all:)
+  $(file >> $@,	make -C $$(srcdir) BUILDDIR=$$(BUILDDIR) $$(MAKE_OPTS) $$@)
+  $(file >> $@,%:)
+  $(file >> $@,	make -C $$(srcdir) BUILDDIR=$$(BUILDDIR) $$(MAKE_OPTS) $$@)
+ endef
 ##
 # build rules
 ##
 .SECONDEXPANSION:
 $(sort $(hostobjdir) $(objdir) $(builddir) $(buildpath)): $(builddir)%: $(file)
 	$(Q)$(call cmd,mkdir,$@)
+
+$(builddir)/Makefile: $(builddir)
+	$(Q)$(if $(findstring $(builddir),$(srcdir)),,$(call cmd,generate_makefile, $@))
 
 $(objdir)%.lexer.c $(hostobjdir)%.lexer.c:%.l $(file)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
@@ -972,7 +1003,7 @@ $(VERSIONFILE): $(dir $(VERSIONFILE))
 # config rules
 ##
 .PHONY: menuconfig gconfig xconfig config oldconfig _oldconfig saveconfig defconfig FORCE
-menuconfig gconfig xconfig config:
+menuconfig gconfig xconfig config: $(builddir)/Makefile
 	$(Q)$(foreach file,$(wildcard $(CONFIGFILE) $(VERSIONFILE)), $(call cmd,clean,$(file));)
 	$(EDITOR) $(CONFIG)
 	$(Q)$(MAKE) $(CONFIGFILE) $(VERSIONFILE)
@@ -1002,7 +1033,7 @@ _oldconfig: $(DEFCONFIG) $(PATHCACHE)
 # 2) relaunch with _defconfig target
 defconfig: action:=_defconfig
 defconfig: TMPCONFIG:=$(builddir).tmpconfig
-defconfig: cleanconfig $(builddir)
+defconfig: cleanconfig $(builddir)/Makefile
 	$(Q)$(call cmd,clean,$(CONFIG))
 	$(Q)$(MAKE) _defconfig TMPCONFIG=$(builddir).tmpconfig -f $(makemore) file=$(file)
 
