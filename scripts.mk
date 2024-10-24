@@ -217,22 +217,19 @@ ifneq ($(sysroot),)
   SYSROOT_CFLAGS+=--sysroot=$(sysroot)
   SYSROOT_CFLAGS+=-isysroot $(sysroot)
   SYSROOT_LDFLAGS+=--sysroot=$(sysroot)
-  ifneq ($(strip $(includedir)),)
-    SYSROOT_CFLAGS+=$(addprefix -I$(sysroot),$(includedir))
-  endif
-  ifneq ($(strip $(libdir)),)
-    RPATHFLAGS+=-Wl,-rpath,$(libdir)
-    SYSROOT_LDFLAGS+=$(addprefix -L$(sysroot),/lib)
-    SYSROOT_LDFLAGS+=$(addprefix -L$(sysroot),/usr/lib)
-    SYSROOT_LDFLAGS+=$(addprefix -L$(sysroot),$(libdir))
-  endif
-  ifneq ($(strip $(pkglibdir)),)
-    RPATHFLAGS+=-Wl,-rpath,$(pkglibdir)
-    SYSROOT_LDFLAGS+=$(addprefix -L$(sysroot),$(pkglibdir))
-  endif
-  PKG_CONFIG_PATH=""
-  PKG_CONFIG_SYSROOT_DIR=$(sysroot)
-  export PKG_CONFIG_SYSROOT_DIR
+endif
+SYSROOT_LDFLAGS+=-L=/lib
+SYSROOT_LDFLAGS+=-L=/usr/lib
+ifneq ($(strip $(includedir)),)
+  SYSROOT_CFLAGS+=$(addprefix -I=,$(includedir))
+endif
+ifneq ($(strip $(libdir)),)
+  RPATHFLAGS+=-Wl,-rpath,$(libdir)
+  SYSROOT_LDFLAGS+=$(addprefix -L=,$(libdir))
+endif
+ifneq ($(strip $(pkglibdir)),)
+  RPATHFLAGS+=-Wl,-rpath,$(pkglibdir)
+  SYSROOT_LDFLAGS+=$(addprefix -L=,$(pkglibdir))
 endif
 
 ifneq ($(destdir),)
