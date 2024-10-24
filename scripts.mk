@@ -30,6 +30,9 @@ define newline
 
 endef
 
+null :=
+space := ${null} ${null}
+
 ##
 # file extention definition
 bin-ext=
