@@ -118,7 +118,7 @@ LN?=ln -f -s
 INSTALL?=install
 INSTALL_PROGRAM?=$(INSTALL) -D
 INSTALL_DATA?=$(INSTALL) -m 644 -D
-PKGCONFIG?=pkg-config
+PKGCONFIG?=pkg-config --env-only
 LESS?=lex
 YACC?=yacc
 MOC?=moc$(QT:%=-%)
@@ -256,6 +256,17 @@ ifeq ($(libdir),)
   endif
 endif
 
+## Configure the pkg-config tool to find *.pc files
+PKG_CONFIG_PATH+=:$(sysroot)/usr/lib/pkg-config
+ifneq ($(wildcard $(sysroot)/usr/lib$(libsuffix)/pkg-config/),)
+  PKG_CONFIG_PATH+=:$(sysroot)/usr/lib$(libsuffix)/pkg-config
+endif
+ifneq ($(wildcard $(sysroot)/usr/lib$(libsuffix)/pkgconfig/),)
+  PKG_CONFIG_PATH+=:$(sysroot)/usr/lib$(libsuffix)/pkgconfig
+endif
+PKG_CONFIG_PATH+=:$(builddir)
+PKG_CONFIG_PATH:=$(subst $(space),,$(PKG_CONFIG_PATH))
+
 O?=2
 ifneq ($(PREFIX),)
   prefix:=$(PREFIX)
@@ -382,7 +393,7 @@ $(foreach t,$(lib-y) $(modules-y),$(eval $(t)_CFLAGS+=-fPIC))
 $(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
 define cmd_pkgconfig
-	$(shell PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config:$(sysroot)/usr/lib/pkgconfig:$(builddir) $(PKGCONFIG) --silence-errors $(2) $(1))
+	$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):$(builddir) $(PKGCONFIG) --silence-errors $(2) $(1))
 endef
 # LIBRARY may contain libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
@@ -811,7 +822,7 @@ define cmd_check_lib
 	$(eval CHECKOPTIONS=$(if $(CHECKVERSION),$(if $(findstring -,$(firstword $(CHECKVERSION))),--max-version=$(word 2,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(lastword $(CHECKVERSION))),--atleast-version=$(word 1,$(CHECKVERSION)))))
 	$(eval CHECKOPTIONS+=$(if $(CHECKVERSION),$(if $(findstring -,$(CHECKVERSION)),,--exact-version=$(CHECKVERSION))))
-	$(eval HAVE_result=$(shell PKG_CONFIG_PATH=$(sysroot)/usr/lib/pkg-config:$(sysroot)/usr/lib/pkgconfig $(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB) && echo y || echo n))
+	$(eval HAVE_result=$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKGCONFIG) --exists --print-errors $(CHECKOPTIONS) $(CHECKLIB) && echo y || echo n))
 endef
 define cmd_test_lib
 	$(eval CHECKCFLAGS:=$(call cmd_pkgconfig,$(2),--cflags))
