@@ -532,17 +532,17 @@ build:=$(action) -f $(makemore) file
 .DEFAULT_GOAL:=build
 .PHONY: _build _install _clean _distclean _deps _hostbuild
 .PHONY: build install clean distclean deps hosttools
-build: $(builddir)/Maefile default_action
+build: $(builddir)/Makefile default_action
 
 _info:
 	@:
 
 _hostbuild: action:=_hostbuild
 _hostbuild: build:=$(action) -f $(makemore) file
-_hostbuild: _info $(subdir-target) $(hostobjdir) $(hostslib-target) $(hostbin-target) _hook
+_hostbuild: _info $(subdir-target) $(hostslib-target) $(hostbin-target) _hook
 	@:
 
-_build: _info $(download-target) $(gitclone-target) $(objdir) $(subdir-project) $(subdir-target) $(doc-y) $(targets) _hook
+_build: _info $(download-target) $(gitclone-target) $(subdir-project) $(subdir-target) $(doc-y) $(targets) _hook
 	@:
 
 _install: action:=_install
@@ -601,7 +601,8 @@ deps: $(.DEFAULT_GOAL) ;
 
 hosttools: action:=_hostbuild
 hosttools: build:=$(action) -f $(makemore) file
-hosttools: $(hostbuilddir) default_action ;
+hosttools:
+	$(Q)$(MAKE) $(build)=$(file)
 
 .PHONY:dist check distcheck install-strip info uninstall
 
@@ -706,54 +707,54 @@ quiet_cmd_generate_makefile=MAKEFILE $(notdir $@/Makefile)
 $(sort $(hostobjdir) $(objdir) $(builddir) $(buildpath)): $(builddir)%: $(file)
 	$(Q)$(call cmd,mkdir,$@)
 
-$(builddir)/Makefile: $(builddir)
+$(builddir)/Makefile: | $(builddir)
 	$(Q)$(if $(findstring $(builddir),$(srcdir)),,$(call cmd,generate_makefile, $@))
 
-$(objdir)%.lexer.c $(hostobjdir)%.lexer.c:%.l $(file)
+$(objdir)%.lexer.c $(hostobjdir)%.lexer.c:%.l $(file) | $(objdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,lex_l)
 
-$(objdir)%.tab.c $(hostobjdir)%.tab.c:%.y $(file)
+$(objdir)%.tab.c $(hostobjdir)%.tab.c:%.y $(file) | $(objdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,yacc_y)
 
-$(objdir)%.o:$(objdir)%.s $(file)
+$(objdir)%.o:$(objdir)%.s $(file) | $(objdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,as_o_s)
 
-$(objdir)%.o:%.s $(file)
+$(objdir)%.o:%.s $(file) | $(objdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,as_o_s)
 
-$(objdir)%.o:$(objdir)%.c $(file)
+$(objdir)%.o:$(objdir)%.c $(file) | $(objdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,cc_o_c)
 
-$(objdir)%.o:%.c $(file)
+$(objdir)%.o:%.c $(file) | $(objdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,cc_o_c)
 
-$(objdir)%.o:$(objdir)%.cpp $(file)
+$(objdir)%.o:$(objdir)%.cpp $(file) | $(objdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,cc_o_cpp)
 
-$(objdir)%.o:%.cpp $(file)
+$(objdir)%.o:%.cpp $(file) | $(objdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,cc_o_cpp)
 
-$(hostobjdir)%.o:$(hostobjdir)%.c $(file)
+$(hostobjdir)%.o:$(hostobjdir)%.c $(file) | $(hostobjdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,hostcc_o_c)
 
-$(hostobjdir)%.o:%.c $(file)
+$(hostobjdir)%.o:%.c $(file) | $(hostobjdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,hostcc_o_c)
 
-$(hostobjdir)%.o:$(hostobjdir)%.cpp $(file)
+$(hostobjdir)%.o:$(hostobjdir)%.cpp $(file) | $(hostobjdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,hostcc_o_cpp)
 
-$(hostobjdir)%.o:%.cpp $(file)
+$(hostobjdir)%.o:%.cpp $(file) | $(hostobjdir)
 	$(Q)$(call qcmd,mkdir,$(dir $@))
 	$(Q)$(call cmd,hostcc_o_cpp)
 
@@ -778,7 +779,7 @@ $(hostslib-target): $(hostobjdir)lib%$(slib-ext:%=.%): $$(addprefix $(hostobjdir
 	$(Q)$(call cmd,hostld_slib)
 
 ifneq ($(objdir),)
-$(objdir)%.h:%.h
+$(objdir)%.h:%.h | $(objdir)
 	$(Q)cp $< $@
 endif
 
@@ -991,7 +992,7 @@ define cmd_generate_config_h
 endef
 
 $(CONFIGFILE): OTHER_CONFIGS=$(foreach line,$(file < $(CONFIG)), $(foreach pattern,$(line), $(if $(findstring $(firstword $(subst =, ,$(pattern))), $(CONFIGS)),,$(firstword $(subst =, ,$(pattern))))))
-$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) $(dir $(CONFIGFILE))
+$(CONFIGFILE): $(if $(wildcard $(srcdir)defconfig),$(CONFIG)) | $(dir $(CONFIGFILE))
 	$(eval $(file < $(CONFIG)))
 	$(file > $@)
 	$(Q)$(call cmd,generate_config_h,$(sort $(CONFIGS) $(OTHER_CONFIGS)))
@@ -1016,7 +1017,7 @@ define cmd_generate_version_h
 	$(file >> $@,$(call version_h))
 endef
 
-$(VERSIONFILE): $(dir $(VERSIONFILE))
+$(VERSIONFILE): | $(dir $(VERSIONFILE))
 	$(file > $@)
 	$(Q)$(call cmd,generate_version_h)
 
