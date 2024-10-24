@@ -241,15 +241,13 @@ endif
 SYSROOT_LDFLAGS:=$(sort $(SYSROOT_LDFLAGS))
 
 ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
-ifeq ($(libdir),)
-  SYSTEM?=$(shell $(TARGETCC) -dumpmachine)
-  LONG_BIT?=$(shell LANG=C getconf LONG_BIT)
-  ifneq ($(wildcard $(sysroot)/lib/$(SYSTEM)),)
-    libsuffix?=/$(SYSTEM)
-   else
-     ifneq ($(wildcard $(sysroot)/lib$(LONG_BIT)),)
-       libsuffix?=$(LONG_BIT)
-    endif
+SYSTEM?=$(shell $(TARGETCC) -dumpmachine)
+LONG_BIT?=$(shell LANG=C getconf LONG_BIT)
+ifneq ($(wildcard $(sysroot)/usr/lib/$(SYSTEM)),)
+  libsuffix?=/$(SYSTEM)
+ else
+   ifneq ($(wildcard $(sysroot)/usr/lib$(LONG_BIT)),)
+     libsuffix?=$(LONG_BIT)
   endif
 endif
 
