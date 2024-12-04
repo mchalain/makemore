@@ -54,6 +54,7 @@ doc-y:=
 hostbin-y:=
 
 srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+cwdir=$(subst $(srcdir),,$(dir $(realpath $(file))))
 export srcdir
 
 #ifneq ($(findstring -arch,$(CFLAGS)),)
@@ -791,8 +792,11 @@ endif
 #
 quiet_cmd_subdir=SUBDIR $*
 define cmd_subdir
-	$(MAKE) -C $(dir $*) cwdir=$(cwdir)$(filter-out ./,$(dir $*)) builddir=$(builddir) $(build)=$(notdir $*)
+	$(MAKE) -C $(dir $*) $(build)=$(notdir $*)
 endef
+
+$(subdir-target): %: FORCE
+	$(Q)$(call cmd,subdir)
 
 quiet_cmd_subdir-project=PROJECT $*
 define cmd_subdir-project
@@ -801,12 +805,8 @@ define cmd_subdir-project
 	$(MAKE) -C $* DESTDIR=$(destdir) install
 endef
 
-.PHONY: $(subdir-project) $(subdir-target) FORCE
 $(subdir-project): %: FORCE
 	$(Q)$(call cmd,subdir-project)
-
-$(subdir-target): %: FORCE
-	$(Q)$(call cmd,subdir)
 
 ###############################################################################
 # Libraries dependencies checking
