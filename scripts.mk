@@ -556,10 +556,16 @@ _install: _info $(install) $(dev-install-y) $(subdir-target) _hook
 
 _clean: action:=_clean
 _clean: build:=$(action) -f $(makemore) file
-_clean: _info $(subdir-target) _clean_objs _clean_targets _clean_objdirs _hook
+_clean: _info $(subdir-target) _clean_objdirs _hook
 	@:
 
-_clean_targets:
+_clean_objdirs: _clean_targets
+#	$(Q)$(if $(hostobjdir),$(call cmd,clean_dir,$(hostobjdir)))
+#	$(Q)$(if $(objdir),$(call cmd,clean_dir,$(objdir)))
+#	$(Q)$(if $(target-objs),$(call cmd,clean_dir,$(realpath $(filter-out $(srcdir)$(cwdir),$(objdir)))))
+#	$(Q)$(if $(target-hostobjs),$(call cmd,clean_dir,$(wildcard $(realpath $(hostobjdir)))))
+
+_clean_targets: _clean_objs
 	$(Q)@$(call cmd,clean,$(wildcard $(clean-target)))
 	$(Q)@$(call cmd,clean,$(wildcard $(targets)))
 	$(Q)$(call cmd,clean,$(wildcard $(hostslib-target)))
@@ -568,10 +574,6 @@ _clean_targets:
 _clean_objs:
 	$(Q)$(call cmd,clean,$(wildcard $(objs-target)))
 	$(Q)$(call cmd,clean,$(wildcard $(hostobjs-target)))
-
-_clean_objdirs:
-	$(Q)$(if $(target-objs),$(call cmd,clean_dir,$(realpath $(filter-out $(srcdir)$(cwdir),$(objdir)))))
-	$(Q)$(if $(target-hostobjs),$(call cmd,clean_dir,$(wildcard $(realpath $(hostobjdir)))))
 
 _deps: action:=_deps
 _deps: build:=$(action) -s -f $(makemore) file
@@ -632,8 +634,8 @@ version:
 ##
 quiet_cmd_clean=$(if $(2),CLEAN $(notdir $(2)))
  cmd_clean=$(if $(2),$(RM) $(2))
-quiet_cmd_clean_dir=$(if $(2),CLEAN $(notdir $(2)))
- cmd_clean_dir=$(if $(2),$(RM) -d $(2))
+quiet_cmd_clean_dir=$(if $(2),CLEAN $(2))
+ cmd_clean_dir=$(if $(2),$(RM) -d $(2) 2> /dev/null || true)
 
 ###############################################################################
 # Commands for build
