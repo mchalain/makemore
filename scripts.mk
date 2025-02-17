@@ -1049,16 +1049,21 @@ cleanconfig: TMPCONFIG:=$(builddir).tmpconfig
 cleanconfig: FORCE
 	$(Q)$(foreach file,$(configfiles), $(call cmd,clean,$(file));)
 
-oldconfig: _info $(builddir) $(CONFIG) FORCE
-	$(Q)$(call cmd,clean,$(PATHCACHE))
-	$(Q)$(MAKE) _oldconfig
+oldconfig: action:=_defconfig
+oldconfig: TMPCONFIG:=$(builddir).tmpconfig
+oldconfig:  cleanconfig $(builddir)/Makefile
+	$(Q)$(MAKE) _defconfig TMPCONFIG=$(builddir).tmpconfig -f $(makemore) file=$(file)
 
-quiet_cmd_oldconfig=OLDCONFIG
-cmd_oldconfig=cat $< | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFIG)
+#quiet_cmd_oldconfig=OLDCONFIG
+#cmd_oldconfig=cat $< | grep $(addprefix -e ,$(RESTCONFIGS)) >> $(CONFIG)
 
-_oldconfig: RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config)))
-_oldconfig: $(DEFCONFIG) $(PATHCACHE)
-	$(Q)$(if $(strip $(RESTCONFIGS)),$(call cmd,oldconfig))
+#_oldconfig: RESTCONFIGS:=$(foreach config,$(CONFIGS),$(if $($(config)),,$(config)))
+#_oldconfig: $(DEFCONFIG) $(PATHCACHE) __oldconfig _hook _configbuild _versionbuild ;
+#	$(Q)$(if $(strip $(RESTCONFIGS)),$(call cmd,oldconfig))
+#	@
+
+#__oldconfig: $(subdir-target) $(lib-deps-target)
+#	$(Q)$(if $(strip $(RESTCONFIGS)),$(call cmd,oldconfig))
 
 # manage the defconfig files
 # 1) use the default defconfig file
