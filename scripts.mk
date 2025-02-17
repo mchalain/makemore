@@ -877,7 +877,7 @@ endef
 $(foreach dir, includedir datadir docdir sysconfdir libdir bindir sbindir ,$(addprefix $(destdir),$($(dir))/)):
 	$(Q)$(MKDIR) $@
 
-$(include-install): $(destdir)$(includedir:%/=%)/%: $(objdir)%
+$(include-install): $(destdir)$(includedir:%/=%)/%: %
 	$(Q)$(call cmd,install_data)
 	$(Q)$(foreach a,$($*_ALIAS) $($*_ALIAS-y), $(call cmd,install_link,$@,$(a)))
 
