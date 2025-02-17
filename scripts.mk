@@ -247,9 +247,13 @@ SYSTEM?=$(shell $(TARGETCC) -dumpmachine)
 LONG_BIT?=$(shell LANG=C getconf LONG_BIT)
 ifneq ($(wildcard $(sysroot)/usr/lib/$(SYSTEM)),)
   libsuffix?=/$(SYSTEM)
- else
-   ifneq ($(wildcard $(sysroot)/usr/lib$(LONG_BIT)),)
-     libsuffix?=$(LONG_BIT)
+else
+  ifneq ($(wildcard $(sysroot)/usr/lib/$(ARCH)-linux-gnu),)
+	libsuffix?=/$(ARCH)-linux-gnu
+  else
+    ifneq ($(wildcard $(sysroot)/usr/lib$(LONG_BIT)),)
+      libsuffix?=$(LONG_BIT)
+    endif
   endif
 endif
 
