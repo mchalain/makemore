@@ -124,18 +124,15 @@ LESS?=lex
 YACC?=yacc
 MOC?=moc$(QT:%=-%)
 UIC?=uic$(QT:%=-%)
+RANLIB?=ranlib
 
 TOOLCHAIN?=
 CROSS_COMPILE?=
 
-ifeq ($(CC),cc)
-  CC:=$(realpath $(shell which $(CC)))
-endif
-
-HOSTCC=gcc
-HOSTCXX=g++
+HOSTCC=cc
+HOSTCXX=c++
 # if gcc, prefer to use directly gcc for ld
-HOSTLD=gcc
+HOSTLD=ld
 HOSTAR=ar
 HOSTRANLIB=ranlib
 HOSTCFLAGS=
@@ -144,36 +141,17 @@ HOSTSTRIP=strip
 HOST_COMPILE:=$(shell LANG=C $(HOSTCC) -dumpmachine | $(AWK) -F- '{print $$1}')
 HOSTCCVERSION:=$(shell $(HOSTCC) -\#\#\#  2>&1 | $(GREP) -i " version ")
 
-ifneq ($(CROSS_COMPILE),)
-  ifeq ($(findstring $(CROSS_COMPILE),$(CC)),)
-    CC=$(CROSS_COMPILE)gcc
-  endif
-endif
-ifneq ($(CC),)
-  CCVERSION:=$(shell $(CC) -\#\#\#  2>&1 | $(GREP) -i " version ")
-  ARCH:=$(shell LANG=C $(CC) -dumpmachine | $(AWK) -F- '{print $$1}')
-endif
-
-ifeq ($(HOST_COMPILE),$(ARCH))
-  CC?=$(HOSTCC)
-  CFLAGS?=
-  CXX?=$(HOSTCXX)
-  CXXFLAGS?=
-  LD?=$(HOSTLD)
-  LDFLAGS?=
-  AR?=$(HOSTAR)
-  RANLIB?=$(HOSTRANLIB)
-  STRIP?=$(HOSTSTRIP)
-else
-  TOOLCHAIN?=$(dir $(dir $(realpath $(shell which $(CC)))))
-endif
-
-ifneq ($(TOOLCHAIN),)
-  export PATH:=$(TOOLCHAIN):$(TOOLCHAIN)/bin:$(PATH)
-endif
-
 ifneq ($(dir $(CC)),./)
   TARGETPREFIX=
+  ifeq ($(CC),cc)
+    CC:=$(notdir $(realpath $(shell which $(CC))))
+  endif
+  ifeq ($(CXX),c++)
+    CXX:=$(notdir $(realpath $(shell which $(CXX))))
+  endif
+  ifeq ($(LD),ld)
+    LD:=$(notdir $(realpath $(shell which $(LD))))
+  endif
 else
   ifneq ($(CROSS_COMPILE),)
     ifeq ($(findstring $(CROSS_COMPILE),$(CC)),)
@@ -190,6 +168,29 @@ TARGETCXX:=$(TARGETPREFIX)$(CXX)
 TARGETAR:=$(TARGETPREFIX)$(AR)
 TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
 TARGETSTRIP:=$(TARGETPREFIX)$(STRIP)
+
+ifneq ($(TARGETCC),)
+  CCVERSION:=$(shell $(TARGETCC) -\#\#\#  2>&1 | $(GREP) -i " version ")
+  ARCH:=$(shell LANG=C $(TARGETCC) -dumpmachine | $(AWK) -F- '{print $$1}')
+endif
+
+ifeq ($(HOST_COMPILE),$(ARCH))
+  CC?=$(HOSTCC)
+  CFLAGS?=
+  CXX?=$(HOSTCXX)
+  CXXFLAGS?=
+  LD?=$(HOSTLD)
+  LDFLAGS?=
+  AR?=$(HOSTAR)
+  RANLIB?=$(HOSTRANLIB)
+  STRIP?=$(HOSTSTRIP)
+else
+  TOOLCHAIN?=$(dir $(dir $(realpath $(shell which $(TARGETCC)))))
+endif
+
+ifneq ($(TOOLCHAIN),)
+  export PATH:=$(TOOLCHAIN):$(TOOLCHAIN)/bin:$(PATH)
+endif
 
 ifeq ($(findstring gcc,$(TARGETCC)),gcc)
   SYSROOT?=$(shell $(TARGETCC) -print-sysroot)
