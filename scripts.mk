@@ -61,14 +61,18 @@ export srcdir
 #ARCH=$(shell echo $(CFLAGS) 2>&1 | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
 #buildpath=$(join $(srcdir),$(ARCH))
 #endif
+ifneq ($(CROSS_COMPILE),)
+ifeq ($(BUILDDIR),)
+  triplet=$(notdir $(CROSS_COMPILE:%-=%))
+  BUILDDIR:=$(srcdir)$(triplet)/
+endif
+endif
 ifneq ($(BUILDDIR),)
-  buildpath:=$(if $(findstring ./,$(dir $(BUILDDIR:%/=%))),$(PWD)/)$(BUILDDIR:%/=%)/
-  builddir:=$(buildpath)
+  builddir:=$(if $(findstring ./,$(dir $(BUILDDIR:%/=%))),$(PWD)/)$(BUILDDIR:%/=%)/
+  objdir:=$(builddir)$(cwdir)
 else
   builddir:=$(srcdir)
-endif
-ifneq ($(CROSS_COMPILE),)
-  buildpath:=$(builddir)$(CROSS_COMPILE:%-=%)/
+  objdir:=
 endif
 
 # internal configuration to install HEADERS file or not
@@ -92,11 +96,6 @@ ifneq ($(wildcard $(PATHCACHE)),)
   include $(PATHCACHE)
 endif
 
-ifneq ($(buildpath),)
-  objdir:=$(buildpath)$(cwdir)
-else
-  objdir:=
-endif
 hostbuilddir:=$(builddir)host/
 hostobjdir:=$(hostbuilddir)$(cwdir)
 
@@ -1088,7 +1087,7 @@ $(DEFCONFIGFILES): %_defconfig: cleanconfig $(builddir)/Makefile
 .PHONY: $(DEFCONFIGFILES)
 
 ifneq ($(TMPCONFIG),)
-include $(TMPCONFIG)
+-include $(TMPCONFIG)
 
 # set the list of configuration variables
 ifneq ($(wildcard $(DEFCONFIG)),)
@@ -1103,8 +1102,7 @@ quiet_cmd__saveconfig=DEFCONFIG $(notdir $<)
 define cmd__saveconfig
   $(foreach config,$2,$(if $($(config)),$(file >> $@,$(config)=$($(config))$(newline)),$(file >> $@,$(config)=n$(newline))))
 endef
-
-$(CONFIG): $(DEFCONFIG) $(TMPCONFIG)
+$(CONFIG): $(TMPCONFIG)
 	$(Q)$(file >$@)
 	$(Q)$(call cmd,_saveconfig,$(sort $(CONFIGS)))
 
@@ -1114,7 +1112,8 @@ $(PATHCACHE):
 
 # create a temporary defconfig file in the format of the config file
 $(TMPCONFIG): $(DEFCONFIG)
-	$(Q)cat $< | grep -v '^\#' > $@
+	$(Q)$(file >$@)
+	$(Q)cat $< | grep -v '^\#' >> $@
 	$(Q)cat $< | awk '/^. .* is not set/{print $$2"=n"}' >> $@
 
 # load the temporary defconfig file
