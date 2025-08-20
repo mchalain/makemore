@@ -1087,7 +1087,7 @@ $(DEFCONFIGFILES): %_defconfig: cleanconfig $(builddir)/Makefile
 .PHONY: $(DEFCONFIGFILES)
 
 ifneq ($(TMPCONFIG),)
--include $(TMPCONFIG)
+include $(TMPCONFIG)
 
 # set the list of configuration variables
 ifneq ($(wildcard $(DEFCONFIG)),)
@@ -1102,7 +1102,8 @@ quiet_cmd__saveconfig=DEFCONFIG $(notdir $<)
 define cmd__saveconfig
   $(foreach config,$2,$(if $($(config)),$(file >> $@,$(config)=$($(config))$(newline)),$(file >> $@,$(config)=n$(newline))))
 endef
-$(CONFIG): $(TMPCONFIG)
+
+$(CONFIG): $(DEFCONFIG) $(TMPCONFIG)
 	$(Q)$(file >$@)
 	$(Q)$(call cmd,_saveconfig,$(sort $(CONFIGS)))
 
@@ -1112,8 +1113,7 @@ $(PATHCACHE):
 
 # create a temporary defconfig file in the format of the config file
 $(TMPCONFIG): $(DEFCONFIG)
-	$(Q)$(file >$@)
-	$(Q)cat $< | grep -v '^\#' >> $@
+	$(Q)cat $< | grep -v '^\#' > $@
 	$(Q)cat $< | awk '/^. .* is not set/{print $$2"=n"}' >> $@
 
 # load the temporary defconfig file
