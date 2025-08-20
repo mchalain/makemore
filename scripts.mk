@@ -717,7 +717,7 @@ quiet_cmd_generate_makefile=MAKEFILE $(notdir $@/Makefile)
 # build rules
 ##
 .SECONDEXPANSION:
-$(sort $(hostobjdir) $(objdir) $(builddir) $(buildpath)): $(builddir)%: $(file)
+$(sort $(hostobjdir) $(objdir) $(builddir) $(buildpath)): $(file)
 	$(Q)$(call cmd,mkdir,$@)
 
 $(builddir)/Makefile: | $(builddir)
