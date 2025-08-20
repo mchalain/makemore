@@ -998,7 +998,7 @@ endef
 quiet_cmd_generate_config_h=CONFIG $(notdir $@)
 define cmd_generate_config_h
   $(file >> $@,$(call config_header_h))
-  $(foreach config,$2,$(if $(findstring n,$($(config))),,$(if $($(config)),$(file >> $@,#define $(config) $($(config)) $(newline)))))
+  $(foreach config,$2,$(if $(findstring $($(config)),n),,$(if $($(config)),$(file >> $@,#define $(config) $($(config)) $(newline)))))
   $(file >> $@)
   $(file >> $@,$(call config_footer_h))
 endef
