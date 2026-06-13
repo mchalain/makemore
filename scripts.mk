@@ -224,13 +224,26 @@ SYSROOT_LDFLAGS+=-L=/usr/lib
 ifneq ($(strip $(includedir)),)
   SYSROOT_CFLAGS+=$(addprefix -I=,$(includedir))
 endif
+ifeq ($(DEBUG),y)
+CFLAGS+=-Wall
+rpath=$(libdir)
 ifneq ($(strip $(libdir)),)
-  RPATHFLAGS+=-Wl,-rpath,$(libdir)
+  RPATHFLAGS+=-Wl,-rpath,$(rpath)
   SYSROOT_LDFLAGS+=$(addprefix -L=,$(libdir))
 endif
 ifneq ($(strip $(pkglibdir)),)
-  RPATHFLAGS+=-Wl,-rpath,$(pkglibdir)
+  RPATHFLAGS+=-Wl,-rpath,$(rpath)
   SYSROOT_LDFLAGS+=$(addprefix -L=,$(pkglibdir))
+endif
+else
+ifneq ($(strip $(libdir)),)
+  RPATHFLAGS+=-Wl,--disable-new-dtags -Wl,--as-needed
+  SYSROOT_LDFLAGS+=$(addprefix -L=,$(libdir))
+endif
+ifneq ($(strip $(pkglibdir)),)
+  RPATHFLAGS+=-Wl,--disable-new-dtags -Wl,--as-needed
+  SYSROOT_LDFLAGS+=$(addprefix -L=,$(pkglibdir))
+endif
 endif
 
 ifneq ($(destdir),)
