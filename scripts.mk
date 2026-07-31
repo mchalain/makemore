@@ -506,6 +506,10 @@ ifneq ($(wildcard $(dir $(makemore))scripts/deps.mk),)
   include $(dir $(makemore))scripts/deps.mk
 endif
 
+ifneq ($(wildcard $(dir $(makemore))scripts/cppcheck.mk),)
+  include $(dir $(makemore))scripts/cppcheck.mk
+endif
+
 ifneq ($(wildcard $(dir $(makemore))scripts/download.mk),)
   include $(dir $(makemore))scripts/download.mk
 endif
