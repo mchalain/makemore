@@ -392,9 +392,10 @@ $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(h
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_GENERATED+=$(patsubst %.y,%.tab.c,$(filter %.y,$($(t)_SOURCES)))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)_SOURCES:=$(filter-out %.y,$($(t)_SOURCES))))
 
+# create object list for each binaries
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(addsuffix .o,$(call notext,$($(t)_GENERATED)))))
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(eval $(t)-objs+=$(addsuffix .o,$(call notext,$($(t)_SOURCES)))))
-
+# case where the SOURCES is not defined and the binary name is the same as the source
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostslib-y) $(hostbin-y), $(if $($(t)-objs),,$(eval $(t)-objs+=$(t))))
 
 $(foreach t,$(slib-y) $(lib-y) $(bin-y) $(sbin-y) $(modules-y) $(hostbin-y),$(eval $(t)_CFLAGS:=$($(t)_CFLAGS) $($(t)_CFLAGS-y)))
@@ -500,6 +501,11 @@ hook-target:=$(hook-$(action:_%=%)) $(hook-$(action:_%=%)-y)
 ###############################################################################
 # scripts extensions
 ##
+
+ifneq ($(wildcard $(dir $(makemore))scripts/deps.mk),)
+  include $(dir $(makemore))scripts/deps.mk
+endif
+
 ifneq ($(wildcard $(dir $(makemore))scripts/download.mk),)
   include $(dir $(makemore))scripts/download.mk
 endif
@@ -729,6 +735,7 @@ quiet_cmd_generate_makefile=MAKEFILE $(notdir $@/Makefile)
 ##
 # build rules
 ##
+
 .SECONDEXPANSION:
 $(sort $(hostobjdir) $(objdir) $(builddir) $(buildpath)): $(file)
 	$(Q)$(call cmd,mkdir,$@)
