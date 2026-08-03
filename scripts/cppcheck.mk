@@ -1,11 +1,11 @@
 CPPCHECK_TOOL=cppcheck
 export CPPCHECK
+
+ifeq (1,$(CPPCHECK))
 cppcheck-target=$(filter %.i,$(objs-target:%.o=%.i))
 $(filter %.o,$(objs-target)): $(cppcheck-target)
 objs-target+=$(cppcheck-target)
 
-ifeq (1,$(CPPCHECK))
-$(warning cppcheck)
 quiet_cmd_cppcheck_c=CCHECK $*
  cmd_cppcheck_c=$(TARGETCC) -E $(CFLAGS) $(INTERN_CFLAGS) $(SYSROOT_CFLAGS) $($*_CFLAGS) -c -o $(@:.o=.i) $< && \
 	$(CPPCHECK_TOOL) --enable=all --inconclusive --language=c $(@:.o=.i)
