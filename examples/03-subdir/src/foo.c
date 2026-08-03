@@ -1,4 +1,4 @@
-extern int bar(void);
+#include "bar.h"
 
 int main(void)
 {
