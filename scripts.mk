@@ -522,6 +522,10 @@ ifneq ($(wildcard $(dir $(makemore))scripts/qt.mk),)
   include $(dir $(makemore))scripts/qt.mk
 endif
 
+ifneq ($(wildcard $(dir $(makemore))scripts/wayland.mk),)
+  include $(dir $(makemore))scripts/wayland.mk
+endif
+
 ##
 # install recipes generation
 ##
