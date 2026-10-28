@@ -57,15 +57,10 @@ srcdir?=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 cwdir=$(subst $(srcdir),,$(dir $(realpath $(file))))
 export srcdir
 
-#ifneq ($(findstring -arch,$(CFLAGS)),)
-#ARCH=$(shell echo $(CFLAGS) 2>&1 | $(AWK) 'BEGIN {FS="[- ]"} {print $$2}')
-#buildpath=$(join $(srcdir),$(ARCH))
-#endif
 ifneq ($(CROSS_COMPILE),)
-ifeq ($(BUILDDIR),)
   triplet=$(notdir $(CROSS_COMPILE:%-=%))
-  BUILDDIR:=$(srcdir)$(triplet)/
-endif
+  BUILDDIR?=$(srcdir)$(triplet)/
+  export BUILDDIR
 endif
 ifneq ($(BUILDDIR),)
   builddir:=$(if $(findstring ./,$(dir $(BUILDDIR:%/=%))),$(PWD)/)$(BUILDDIR:%/=%)/
@@ -102,8 +97,14 @@ hostobjdir:=$(hostbuilddir)$(cwdir)
 ifneq ($(file),)
   include $(file)
 endif
+ifneq ($(TOOLCHAIN),)
+  PATH:=$(TOOLCHAIN:%/=%)/bin:$(value PATH)
+  TOOLBIN=$(TOOLCHAIN:%/=%)/bin/
+endif
 
-PATH:=$(value PATH):$(hostobjdir)
+PATH:=$(hostobjdir):$(value PATH)
+export PATH
+
 TMPDIR:=/tmp
 TESTFILE:=makemore_test
 ##
@@ -125,7 +126,6 @@ MOC?=moc$(QT:%=-%)
 UIC?=uic$(QT:%=-%)
 RANLIB?=ranlib
 
-TOOLCHAIN?=
 CROSS_COMPILE?=
 
 HOSTCC=cc
@@ -154,12 +154,16 @@ ifneq ($(dir $(CC)),./)
 else
   ifneq ($(CROSS_COMPILE),)
     ifeq ($(findstring $(CROSS_COMPILE),$(CC)),)
-      TARGETPREFIX=$(CROSS_COMPILE:%-=%)-
+      TARGETPREFIX:=$(CROSS_COMPILE:%-=%)-
+    endif
+    ifneq ($(wildcard $(TOOLCHAIN)/bin/$(TARGETPREFIX)$(CC)),)
+      TARGETPREFIX:=$(TOOLCHAIN)/bin/$(TARGETPREFIX)
     endif
   else
     TARGETPREFIX=
   endif
 endif
+
 TARGETCC:=$(TARGETPREFIX)$(CC)
 TARGETLD:=$(TARGETPREFIX)$(LD)
 TARGETAS:=$(TARGETPREFIX)$(AS)
@@ -169,7 +173,7 @@ TARGETRANLIB:=$(TARGETPREFIX)$(RANLIB)
 TARGETSTRIP:=$(TARGETPREFIX)$(STRIP)
 
 ifneq ($(TARGETCC),)
-  CCVERSION:=$(shell $(TARGETCC) -\#\#\#  2>&1 | $(GREP) -i " version ")
+  CCVERSION:=$(shell $(TARGETCC) -\#\#\#  2>&1)
   ARCH:=$(shell LANG=C $(TARGETCC) -dumpmachine | $(AWK) -F- '{print $$1}')
 endif
 
@@ -184,14 +188,10 @@ ifeq ($(HOST_COMPILE),$(ARCH))
   RANLIB?=$(HOSTRANLIB)
   STRIP?=$(HOSTSTRIP)
 else
-  TOOLCHAIN?=$(dir $(dir $(realpath $(shell which $(TARGETCC)))))
+  TOOLCHAIN?=$(dir $(abspath $(dir $(realpath $(shell which $(TARGETCC))))))
 endif
 
-ifneq ($(TOOLCHAIN),)
-  export PATH:=$(TOOLCHAIN):$(TOOLCHAIN)/bin:$(PATH)
-endif
-
-ifeq ($(findstring gcc,$(TARGETCC)),gcc)
+ifneq ($(findstring gcc,$(CCVERSION)),)
   SYSROOT?=$(shell $(TARGETCC) -print-sysroot)
 endif
 
@@ -203,7 +203,6 @@ endif
 
 ifeq ($(destdir),)
   destdir:=$(abspath $(DESTDIR))
-  export destdir
 endif
 
 ifneq ($(CROSS_COMPILE),)
@@ -246,12 +245,6 @@ ifneq ($(strip $(pkglibdir)),)
 endif
 endif
 
-ifneq ($(destdir),)
-  SYSROOT_CFLAGS+=$(addprefix -I$(destdir),$(includedir))
-  SYSROOT_LDFLAGS+=$(addprefix -L$(destdir),$(libdir))
-  SYSROOT_LDFLAGS+=$(addprefix -L$(destdir),$(pkglibdir))
-endif
-
 SYSROOT_LDFLAGS:=$(sort $(SYSROOT_LDFLAGS))
 
 ARCH?=$(shell LANG=C $(TARGETCC) -dumpmachine | awk -F- '{print $$1}')
@@ -270,16 +263,16 @@ else
 endif
 
 ## Configure the pkg-config tool to find *.pc files
-PKG_CONFIG_PATH+=:$(sysroot)/usr/lib/pkg-config
-ifneq ($(wildcard $(sysroot)/usr/lib$(libsuffix)/pkg-config/),)
-  PKG_CONFIG_PATH+=:$(sysroot)/usr/lib$(libsuffix)/pkg-config
-endif
+PKG_CONFIG_PATH+=:$(sysroot)/usr/lib/pkgconfig
 ifneq ($(wildcard $(sysroot)/usr/lib$(libsuffix)/pkgconfig/),)
   PKG_CONFIG_PATH+=:$(sysroot)/usr/lib$(libsuffix)/pkgconfig
 endif
 ifneq ($(wildcard $(sysroot)/usr/share/pkgconfig/),)
   PKG_CONFIG_PATH+=:$(sysroot)/usr/share/pkgconfig
 endif
+PKG_CONFIG_SYSROOT_DIR=$(sysroot)
+$(foreach path,$(subst :, ,$(PKG_CONFIG_LIBDIR)),$(eval PKG_CONFIG_SYSTEM_INCLUDE_PATH=:$(path:%/pkgconfig=%)/include))
+$(foreach path,$(subst :, ,$(PKG_CONFIG_LIBDIR)),$(eval PKG_CONFIG_SYSTEM_LIB_PATH=:$(path:%/pkgconfig=%)/lib))
 PKG_CONFIG_PATH+=:$(builddir)
 PKG_CONFIG_PATH:=$(subst $(space),,$(PKG_CONFIG_PATH))
 
@@ -410,7 +403,12 @@ $(foreach t,$(lib-y) $(modules-y),$(eval $(t)_CFLAGS+=-fPIC))
 $(foreach t,$(slib-y) $(lib-y),$(eval include-y+=$($(t)_HEADERS)))
 
 define cmd_pkgconfig
-	$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) $(PKGCONFIG) --silence-errors $(2) $(1))
+	$(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) \
+		PKG_CONFIG_SYSROOT_DIR=$(PKG_CONFIG_SYSROOT_DIR) \
+		PKG_CONFIG_SYSTEM_INCLUDE_PATH=$(PKG_CONFIG_SYSTEM_INCLUDE_PATH) \
+		PKG_CONFIG_SYSTEM_INCLUDE_PATH=$(PKG_CONFIG_SYSTEM_INCLUDE_PATH) \
+		PKG_CONFIG_SYSTEM_LIBRARY_PATH=$(PKG_CONFIG_SYSTEM_LIBRARY_PATH) \
+		$(PKGCONFIG) --silence-errors $(2) $(1))
 endef
 # LIBRARY may contain libraries name to check
 # The name may terminate with {<version>} informations like LIBRARY+=usb{1.0}
@@ -719,6 +717,7 @@ quiet_cmd_generate_makefile=MAKEFILE $(notdir $@/Makefile)
  define cmd_generate_makefile
   $(file >  $@,BUILDDIR=$$(realpath $$(dir $$(firstword $$(MAKEFILE_LIST)))))
   $(file >> $@,srcdir=$(srcdir))
+  $(if $(TOOLCHAIN),$(file >>  $@,TOOLCHAIN=$(TOOLCHAIN)))
   $(if $(CROSS_COMPILE),$(file >> $@,MAKE_OPTS+=CROSS_COMPILE=$(CROSS_COMPILE)))
   $(if $(SYSROOT),$(file >> $@,MAKE_OPTS+=SYSROOT=$(SYSROOT)))
   $(if $(ARCH),$(file >> $@,MAKE_OPTS+=ARCH=$(ARCH)))
@@ -736,9 +735,9 @@ quiet_cmd_generate_makefile=MAKEFILE $(notdir $@/Makefile)
   $(if $(CPPFLAGS),$(file >> $@,MAKE_OPTS+=CPPFLAGS="$(CPPFLAGS)"))
   $(if $(LDFLAGS),$(file >> $@,MAKE_OPTS+=LDFLAGS="$(LDFLAGS)"))
   $(file >> $@,all:)
-  $(file >> $@,	make -C $$(srcdir) BUILDDIR=$$(BUILDDIR) $$(MAKE_OPTS) $$@)
+  $(file >> $@,	make -C $$(srcdir) BUILDDIR=$$(BUILDDIR) TOOLCHAIN=$$(TOOLCHAIN) $$(MAKE_OPTS) $$@)
   $(file >> $@,%:)
-  $(file >> $@,	make -C $$(srcdir) BUILDDIR=$$(BUILDDIR) $$(MAKE_OPTS) $$@)
+  $(file >> $@,	make -C $$(srcdir) BUILDDIR=$$(BUILDDIR) TOOLCHAIN=$$(TOOLCHAIN) $$(MAKE_OPTS) $$@)
  endef
 ##
 # build rules

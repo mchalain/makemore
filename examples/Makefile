@@ -1,0 +1,9 @@
+subdir-y+=01-simpleC
+subdir-y+=02-multibinaries
+subdir-y+=03-subdir
+subdir-y+=04-dependencies
+subdir-y+=05-configuration
+subdir-y+=06-library
+subdir-y+=07-installation
+subdir-y+=08-generatedsources
+subdir-y+=09-extensions

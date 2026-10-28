@@ -51,7 +51,9 @@ List of variables:
 3. [\*_PKGCONFIG](#pkgconfig): library pkgconfig file.
 4. [DEBUG](#extention): force the debug flags on the compiler.
 4. [CROSS_COMPILE](#crosscompile): toolchain prefix for cross-compilation.
+4. [TOOLCHAIN](#crosscompile): toolchain path for cross-compilation.
 5. [SYSROOT](#crosscompile): sysroot directory to use with the binaries' compiler.
+5. [BUILDDIR](#out-tree): path for generated files during build out-tree
 5. [DESTDIR](#installation): prefix directory for installation.
 6. [DEVINSTALL](#installation): force the header files, static libraries installation.
 
@@ -393,13 +395,13 @@ main_LIBRARY-$(CONFIG_X264)+=x264
 
 cf.:[dependencies](examples/04-dependencies)
 
-# Build your project outside the source tree
+# Build your project outside the source tree ${out-tree}
 
-The `builddir` variable may define the results' directory of  the build.
+The `BUILDDIR` variable may define the results' directory of  the build.
 The variable may be defined during the call:
 
 ```bash
- $ make builddir=build
+ $ make BUILDDIR=build
  ...
 ```
 
@@ -411,6 +413,9 @@ include scripts.mk
 lib-y+=mylib
 ```
 
+A **Makefile** is generated inside the `BUILDDIR` directory to simplify
+the call.
+
 # Cross-compilation
 
 ## Build variables
@@ -421,18 +426,30 @@ Makemore uses the standard variables for build:
  3) **CFLAGS**
  4) **LDFLAGS**
  5) **CROSS_COMPILE**
- 6) **SYSROOT**
+ 6) **TOOLCHAIN**
+ 7) **SYSROOT**
 
 A simple way may be to set the variables 1), 2), 3), 4) with the
 compilator version of the target. Or to set the variable 5) with
 the target compilor prefix.
 
 ```bash
-$ make CROSS_COMPILE=aarch64-linux-gnu-
+$ make CROSS_COMPILE=aarch64-linux-gnu- 
 ```
 
-The variable 6) is useful to change the root directory to search the
-headers and the libraries during the build.
+The variable 6) allows to set few internal variables to set the PATH,
+the sysroot, the pkg-config variables...  
+The variable 7) is useful to change the root directory to search the
+headers and the libraries during the build. This variable is useless
+if the compiler knows the sysroot.
+
+A **Makefile** is generated inside the build directory to make the
+next calls to *make* easier.
+
+```bash
+$ cd ./aarch64-linux-gnu
+$ make
+```
 
 ## Mix host and target binaries
 
